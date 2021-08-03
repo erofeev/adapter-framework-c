@@ -7,18 +7,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "adp_osal.h"
-#include "adp_dispatcher.h"
 #include "adp_logging.h"
 
 
-
-int main(void)
+int adp_mqtt_client_init()
 {
-    adp_log("Creating the World");
-
-
-	adp_os_start(&adp_dispatcher_loop);
-
-	return EXIT_SUCCESS;
+    adp_log("%s", __FUNCTION__);
+    return 0;
 }
+
