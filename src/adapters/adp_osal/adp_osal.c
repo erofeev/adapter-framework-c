@@ -5,9 +5,7 @@
  */
 
 #include <stdio.h>
-
-#include "FreeRTOS.h"
-#include "task.h"
+#include <string.h>
 
 #include "adp_osal.h"
 #include "adp_logging.h"
@@ -23,11 +21,34 @@ void vApplicationTickHook( void )
 
 void vApplicationDaemonTaskStartupHook( void )
 {
-    adp_log("[%s]", __FUNCTION__);
+    adp_log("Ok");
 }
 
+void *adp_os_malloc(unsigned int size)
+{
+    return pvPortMalloc(size);
+}
 
-void vTaskCode( void* params )
+void adp_os_free(void* ptr)
+{
+    if (ptr)
+        vPortFree(ptr);
+}
+
+int adp_os_get_max_prio(void)
+{
+    return configMAX_PRIORITIES;
+}
+
+char* adp_os_get_task_name(void)
+{
+    if (uxTaskGetNumberOfTasks())
+        return pcTaskGetName(NULL);
+    else
+        return NULL;
+}
+
+void adp_os_generic_thread( void* params )
 {
     adp_os_start_task_t l_task = params;
     for( ;; )
@@ -41,14 +62,24 @@ void adp_os_sleep(int time_ms)
     vTaskDelay(pdMS_TO_TICKS(time_ms));
 }
 
-void adp_os_start(adp_os_start_task_t task_to_run)
+void adp_os_start_task(adp_os_start_task_t task_body, int stack_size, int task_prio)
 {
-    xTaskCreate( &vTaskCode,
-                 "osal",
-                 configMINIMAL_STACK_SIZE,
-                 task_to_run,
-                 tskIDLE_PRIORITY,
+    int size_of_name = sizeof(ADP_SYS_TASK_NAME_MASK);
+    char* task_name = (char*) adp_os_malloc(size_of_name);
+    if (task_name) {
+        memcpy(task_name, ADP_SYS_TASK_NAME_MASK, size_of_name);
+        task_name[size_of_name - 2] = (0x30 + task_prio) % 255;
+    }
+    xTaskCreate(&adp_os_generic_thread,
+                 task_name,
+                 stack_size,
+                 task_body,
+                 task_prio,
                  NULL );
+    adp_os_free(task_name);
+}
 
+void adp_os_start(void)
+{
     vTaskStartScheduler();
 }

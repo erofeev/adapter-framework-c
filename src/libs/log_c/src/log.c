@@ -20,6 +20,7 @@
  * IN THE SOFTWARE.
  */
 
+#include "adp_osal.h"
 #include "log.h"
 #define LOG_USE_COLOR 1
 #define MAX_CALLBACKS 32
@@ -69,13 +70,13 @@ static void stdout_callback(log_Event *ev) {
 
 #ifdef LOG_USE_COLOR
   fprintf(
-    ev->udata, "%s.%03ld %s%-5s\x1b[0m \x1b[90m%s:%d:\x1b[0m ",
+    ev->udata, "%s.%03ld %s%-5s\x1b[0m\x1b[90m[%s -> %s()] :\x1b[0m ",
     buf, ms, level_colors[ev->level], level_strings[ev->level],
-    ev->file, ev->line);
+    ev->task_name, ev->function);
 #else
   fprintf(
-    ev->udata, "%s.%03ld %-5s %s:%d: ",
-    buf, ms, level_strings[ev->level], ev->file, ev->line);
+    ev->udata, "%s.%03ld %-5s [%s -> %s()]: ",
+    buf, ms, level_strings[ev->level], ev->task_name, ev->function);
 #endif
   vfprintf(ev->udata, ev->fmt, ev->ap);
   fprintf(ev->udata, "\n");
@@ -151,13 +152,17 @@ static void init_event(log_Event *ev, void *udata) {
 }
 
 
-void log_log(int level, const char *file, int line, const char *fmt, ...) {
+void log_log(int level, const char *file, int line, const char* function, const char *fmt, ...) {
   log_Event ev = {
     .fmt   = fmt,
     .file  = file,
     .line  = line,
+    .function = function,
     .level = level,
   };
+
+  ev.task_name = adp_os_get_task_name();
+  if (!ev.task_name) ev.task_name = "na";
 
   lock();
 

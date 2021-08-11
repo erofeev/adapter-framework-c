@@ -13,12 +13,14 @@
 
 
 
-int main(void)
-{
+int main(void) {
     adp_log("Creating the World");
 
+    for (int i = 0; i < 2 /*configMAX_PRIORITIES*/; ++i) {
+        adp_os_start_task(&adp_dispatcher_loop, 512, i);
+    }
 
-	adp_os_start(&adp_dispatcher_loop);
+    adp_os_start();
 
-	return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }

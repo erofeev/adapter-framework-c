@@ -13,7 +13,8 @@
 
 void adp_dispatcher_cycle(void)
 {
-    adp_log("[%s]", __FUNCTION__);
+
+    adp_log("-");
 }
 
 
