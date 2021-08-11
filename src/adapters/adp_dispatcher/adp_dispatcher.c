@@ -13,16 +13,14 @@
 
 void adp_dispatcher_cycle(void)
 {
-
     adp_log("-");
 }
 
 
-void adp_dispatcher_loop(void)
+void adp_dispatcher(void)
 {
     while (1) {
         adp_dispatcher_cycle();
         adp_os_sleep(500);
     }
 }
-

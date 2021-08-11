@@ -18,9 +18,15 @@ typedef void (*adp_os_start_task_t)(void);
 
 void adp_os_start(void);
 
+int  adp_os_uptime(void);
+
+int  adp_os_uptime_ms(void);
+
 int  adp_os_get_max_prio(void);
 
-void adp_os_start_task( adp_os_start_task_t task_body, int stack_size, int task_prio);
+int  adp_os_get_free_heap_size(void);
+
+void adp_os_start_task(const char* task_name, adp_os_start_task_t task_body, int stack_size, int task_prio);
 
 char* adp_os_get_task_name(void);
 

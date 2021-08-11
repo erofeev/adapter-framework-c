@@ -17,8 +17,7 @@ typedef enum {
 
 void adp_dispatcher_cycle(void);
 
-void adp_dispatcher_loop (void);
+void adp_dispatcher(void);
 
-void adp_dispatcher_loop1 (void);
 
 #endif /* ADP_DISPATCHER_H_ */
