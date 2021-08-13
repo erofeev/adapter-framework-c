@@ -32,17 +32,26 @@ int main(void) {
     // Example of first dispatcher creation with task prio 5 and items number 25
     int d1_prio  = 5;
     int d1_items = 25;
-    int d1_id = adp_dispatcher_create(d1_prio, d1_items);
+    adp_dispatcher_handle_t d1_id = adp_dispatcher_create(d1_prio, d1_items);
 
     // Example of second dispatcher creation with task prio 4 and items number 35
-    int d2_id = adp_dispatcher_create(4, 35);
+    adp_dispatcher_handle_t d2_id = adp_dispatcher_create(4, 35);
 
     // Example of third dispatcher creation with the same configuration as above
-    int d3_id = adp_dispatcher_create(4, 35);
+    adp_dispatcher_handle_t d3_id = adp_dispatcher_create(4, 35);
 
-    (void)(d1_id);
+
     (void)(d2_id);
     (void)(d3_id);
+
+    // Example of adding new topic and few cmds
+    int t1_id   = 0x03;
+    int cmd1_id = 0x00;
+    adp_topic_register(d1_id, t1_id, "Topic 1", cmd1_id, "CMD 1", ADP_TOPIC_CMD_PRIORITY_HIGH);
+
+    // Error log should be here
+    adp_topic_register(d1_id, t1_id+1, "Topic 2", cmd1_id, "CMD 1", ADP_TOPIC_CMD_PRIORITY_HIGH);
+    adp_topic_register(d3_id, t1_id+2, "Topic 1", cmd1_id, "CMD 1", ADP_TOPIC_CMD_PRIORITY_HIGH);
 
   //  adp_topic_create(dispatcher_id, topic_id, cmd_id, prio);
   //  adp_topic_is_(topic_id);
