@@ -7,24 +7,39 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+
 #include "adp_osal.h"
 #include "adp_logging.h"
 
 
+ADP_WEAK
 void vApplicationIdleHook( void )
 {
 }
 
+ADP_WEAK
 void vApplicationTickHook( void )
 {
 }
 
+ADP_WEAK
 void vApplicationDaemonTaskStartupHook( void )
 {
-    adp_log("Ok");
+    adp_log("OS started");
 }
 
-void *adp_os_malloc(unsigned int size)
+
+ADP_WEAK
+size_t xPortGetFreeHeapSize(void)
+{
+    adp_log("%s not supported", __FUNCTION__);
+    return ADP_RESULT_FAILED;
+}
+
+void *adp_os_malloc(uint32_t size)
 {
     return pvPortMalloc(size);
 }
@@ -35,12 +50,12 @@ void adp_os_free(void* ptr)
         vPortFree(ptr);
 }
 
-int adp_os_uptime(void)
+uint32_t adp_os_uptime(void)
 {
     return xTaskGetTickCount()/configTICK_RATE_HZ;
 }
 
-int adp_os_uptime_ms(void)
+uint32_t adp_os_uptime_ms(void)
 {
     return xTaskGetTickCount()/(configTICK_RATE_HZ/1000);
 }
@@ -57,53 +72,66 @@ char* adp_os_get_task_name(void)
         return NULL;
 }
 
-__attribute__((weak)) size_t xPortGetFreeHeapSize( void )
-{
-    adp_log("%s not supported", __FUNCTION__);
-    return -1;
-}
-
 int adp_os_get_free_heap_size(void)
 {
     return (int)xPortGetFreeHeapSize();
 }
 
-void adp_os_generic_thread( void* params )
-{
-    adp_os_start_task_t l_task = params;
-    for( ;; )
-    {
-        l_task();
-    }
-}
-
-void adp_os_sleep(int time_ms)
+void adp_os_sleep(uint32_t time_ms)
 {
     vTaskDelay(pdMS_TO_TICKS(time_ms));
 }
 
-void adp_os_start_task(const char* task_name, adp_os_start_task_t task_body, int stack_size, int task_prio)
+adp_os_queue_handle_t adp_os_queue_create(uint32_t queue_length, uint32_t item_size)
 {
-    char* auto_name = NULL;
-    if (!task_name) {
-        int size_of_name = sizeof(ADP_SYS_TASK_NAME_MASK);
-        char *auto_name = (char*) adp_os_malloc(size_of_name);
-        if (auto_name) {
-            memcpy(auto_name, ADP_SYS_TASK_NAME_MASK, size_of_name);
-            auto_name[size_of_name - 2] = (0x30 + task_prio) % 255;
-        }
-        task_name = auto_name;
+    QueueHandle_t queue = xQueueCreate(queue_length, item_size);
+    return (adp_os_queue_handle_t)queue;
+}
+
+int adp_queue_receive(adp_os_queue_handle_t queue, void * pvBuffer, uint32_t timeout_ms)
+{
+    BaseType_t result = xQueueReceive(queue, &(pvBuffer), (TickType_t) timeout_ms * portTICK_PERIOD_MS);
+    if (pdPASS != result) {
+        return ADP_RESULT_FAILED;
     }
-    xTaskCreate(&adp_os_generic_thread,
+    return ADP_RESULT_SUCCESS;
+}
+
+int adp_queue_msg_total(adp_os_queue_handle_t queue)
+{
+    int total;
+    taskENTER_CRITICAL();
+    {
+        total = (int)uxQueueSpacesAvailable(queue) + (int)uxQueueMessagesWaiting(queue);
+    }
+    taskEXIT_CRITICAL();
+    return total;
+}
+
+int adp_queue_msg_waiting(adp_os_queue_handle_t queue)
+{
+    return (int)uxQueueMessagesWaiting(queue);
+}
+
+int adp_queue_space_available(adp_os_queue_handle_t queue)
+{
+    return (int)uxQueueSpacesAvailable(queue);
+}
+
+int adp_os_start_task(const char* task_name, adp_os_start_task_t task_body, uint32_t stack_size, uint32_t task_prio, void* user_data)
+{
+    int result = xTaskCreate(
+                (TaskFunction_t)task_body,
                  task_name,
                  stack_size,
-                 task_body,
+                 user_data,
                  task_prio,
                  NULL );
 
-    if (!auto_name) {
-        adp_os_free(auto_name);
+    if (pdPASS == result) {
+        return ADP_RESULT_SUCCESS;
     }
+    return ADP_RESULT_FAILED;
 }
 
 void adp_os_start(void)
