@@ -88,10 +88,26 @@ adp_os_queue_handle_t adp_os_queue_create(uint32_t queue_length, uint32_t item_s
     return (adp_os_queue_handle_t)queue;
 }
 
-int adp_queue_receive(adp_os_queue_handle_t queue, void * pvBuffer, uint32_t timeout_ms)
+adp_result_t adp_queue_receive(adp_os_queue_handle_t queue, void * const item, uint32_t timeout_ms)
 {
-    BaseType_t result = xQueueReceive(queue, &(pvBuffer), (TickType_t) timeout_ms * portTICK_PERIOD_MS);
+    BaseType_t result = xQueueReceive(queue, item, (TickType_t) timeout_ms * portTICK_PERIOD_MS);
+    if (errQUEUE_EMPTY == result) {
+        return ADP_RESULT_TIMEOUT;
+    }
     if (pdPASS != result) {
+        return ADP_RESULT_FAILED;
+    }
+    return ADP_RESULT_SUCCESS;
+}
+
+adp_result_t adp_os_queue_put(adp_os_queue_handle_t queue, const void *item)
+{
+    BaseType_t result = xQueueSend(queue, item, 0 /* immediately */ );
+
+    if (result == errQUEUE_FULL) {
+        return ADP_RESULT_NO_SPACE_LEFT;
+    }
+    if (result != pdPASS) {
         return ADP_RESULT_FAILED;
     }
     return ADP_RESULT_SUCCESS;
@@ -118,7 +134,7 @@ int adp_queue_space_available(adp_os_queue_handle_t queue)
     return (int)uxQueueSpacesAvailable(queue);
 }
 
-int adp_os_start_task(const char* task_name, adp_os_start_task_t task_body, uint32_t stack_size, uint32_t task_prio, void* user_data)
+adp_result_t adp_os_start_task(const char* task_name, adp_os_start_task_t task_body, uint32_t stack_size, uint32_t task_prio, void* user_data)
 {
     int result = xTaskCreate(
                 (TaskFunction_t)task_body,

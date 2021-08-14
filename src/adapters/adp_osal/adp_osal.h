@@ -9,10 +9,17 @@
 
 #include <stdint.h>
 
-
+#define UNUSED_VAR(x) (void)x
 #define ADP_WEAK                   __attribute__((weak))
-#define ADP_RESULT_SUCCESS         0
-#define ADP_RESULT_FAILED         -1
+
+typedef enum {
+    ADP_RESULT_FAILED              = -32767,
+    ADP_RESULT_TIMEOUT,
+    ADP_RESULT_INVALID_PARAMETER,
+    ADP_RESULT_NO_SPACE_LEFT,
+    ADP_RESULT_SUCCESS = 0,
+} adp_result_t;
+
 #define ADP_ASSERT(A, MSG)         do { if (!A) { adp_log_f(MSG); while(1); } } while (0)
 
 
@@ -23,7 +30,7 @@ typedef void* adp_os_queue_handle_t;
 // Task handling
 void adp_os_start(void);
 
-int adp_os_start_task(const char* task_name, adp_os_start_task_t task_body, uint32_t stack_size, uint32_t task_prio, void* user_data);
+adp_result_t adp_os_start_task(const char* task_name, adp_os_start_task_t task_body, uint32_t stack_size, uint32_t task_prio, void* user_data);
 
 char* adp_os_get_task_name(void);
 
@@ -47,7 +54,9 @@ void adp_os_free(void* ptr);
 // Queue management
 adp_os_queue_handle_t adp_os_queue_create(uint32_t queue_length, uint32_t item_size);
 
-int adp_queue_receive(adp_os_queue_handle_t queue, void * pvBuffer, uint32_t timeout_ms);
+adp_result_t adp_queue_receive(adp_os_queue_handle_t queue, void * const item, uint32_t timeout_ms);
+
+adp_result_t adp_os_queue_put(adp_os_queue_handle_t, const void *item);
 
 int adp_queue_msg_total(adp_os_queue_handle_t queue);
 

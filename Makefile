@@ -11,7 +11,7 @@ DEPS := $(shell find ./src -type d )
 
 # FLAGS
 CLFAGS  := -Wall
-LDFLAGS := -pthread
+LDFLAGS := -pthread -Wl,-Map=$(BUILD_DIR_NAME)/program.map,--cref
 
 
 # function to get obj file name from src file name

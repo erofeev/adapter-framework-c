@@ -7,18 +7,32 @@
 #ifndef ADP_DISPATCHER_H_
 #define ADP_DISPATCHER_H_
 
+
+#undef ADP_DISPATCHER_MODULE_NO_DEBUG
+
+#define ADP_DISPATCHER_TABLE_SIZE              50
+#define ADP_SUBSCRIBER_TABLE_SIZE              70
+
+
 typedef enum {
-    ADP_TOPIC_CMD_PRIORITY_HIGH    = 1,
-    ADP_TOPIC_CMD_PRIORITY_NORMAL  = 0,
-} adp_topic_cmd_prio_t;
+    ADP_TOPIC_PRIORITY_NORMAL  = 0,
+    ADP_TOPIC_PRIORITY_HIGH    = 1,
+    ADP_TOPIC_PRIORITY_MAX     = ADP_TOPIC_PRIORITY_HIGH,
+} adp_topic_prio_t;
 
 typedef void* adp_dispatcher_handle_t;
 
-typedef void (adp_topic_cb)(uint16_t cmd, void* data, uint32_t len, uint32_t flags);
+typedef adp_result_t (adp_topic_cb)(uint16_t topic_id, void* data, uint32_t len);
 
 
 adp_dispatcher_handle_t adp_dispatcher_create(uint32_t os_prio, uint32_t max_items);
 
-int adp_topic_register(adp_dispatcher_handle_t dispatcher_hnd, uint16_t topic_id, const char* topic_name, uint16_t cmd_id, const char* cmd_name, adp_topic_cmd_prio_t prio);
+adp_result_t adp_topic_register(adp_dispatcher_handle_t dispatcher_hnd, uint32_t topic_id, const char* topic_name);
+
+adp_result_t adp_topic_publish(uint32_t topic_id, const void* const data, uint32_t data_length, adp_topic_prio_t prio);
+
+adp_result_t adp_topic_subscribe (uint32_t topic_mask, adp_topic_cb subscriber_cb, const char * subscriber_name);
+
+void adp_dispatcher_db_print(void);
 
 #endif /* ADP_DISPATCHER_H_ */
