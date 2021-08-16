@@ -64,7 +64,7 @@ int main(void) {
     adp_topic_register(dispatcher_2, 0x00000100, "Sensors");
     adp_topic_register(dispatcher_3, 0x00000200, "Connectivity");
 
-    adp_topic_register(dispatcher_1, 0x00000000, "Zero");
+    adp_topic_register(dispatcher_1, 0x10000000, "");
 
     // Example of publish
     char *data        = "Test data to transfer";

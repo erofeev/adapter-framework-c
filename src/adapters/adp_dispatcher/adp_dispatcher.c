@@ -172,7 +172,7 @@ int adp_dispatcher_add(adp_dispatcher_handle_t handle, int id)
 
 adp_result_t adp_topic_register(adp_dispatcher_handle_t dispatcher_hnd, uint32_t topic_id, const char* topic_name)
 {
-    if ( (!dispatcher_hnd) || (!topic_name) || (!topic_id) ) { //TODO topic_name to "" if no specified. and think about 0 topic_id
+    if ( (!dispatcher_hnd) || (!topic_name) || (!topic_id) ) {
         ADP_ASSERT(0, "Invalid parameter specified");
         return ADP_RESULT_INVALID_PARAMETER;
     }
@@ -190,7 +190,7 @@ adp_result_t adp_topic_register(adp_dispatcher_handle_t dispatcher_hnd, uint32_t
             dispatcher_id = dispatcher_table[i].dispatcher_id;
         }
         if (dispatcher_table[i].topic_id == 0x00000000) {
-            // TODO if handle == 0 or handle == our handle
+            if ( (dispatcher_table[i].handle == 0) || (dispatcher_table[i].handle == dispatcher_hnd) )
             if (empty_slot_id == -1) {
                 empty_slot_id = i;
             }
@@ -209,8 +209,8 @@ adp_result_t adp_topic_register(adp_dispatcher_handle_t dispatcher_hnd, uint32_t
 
     // The handle is not found
     if (is_handle_in_the_table == false) {
-    //    adp_log_e("Handler 0x%x not found in DB", dispatcher_hnd);
-   // TODO     return ADP_RESULT_INVALID_PARAMETER;  // need to have handle array somewhere in another table...
+        adp_log_e("Handler 0x%x not found in DB", dispatcher_hnd);
+        return ADP_RESULT_INVALID_PARAMETER;
     }
 
     // The topic already registered
