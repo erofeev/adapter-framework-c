@@ -15,8 +15,7 @@
 
 void test_publisher_1(void* params)
 {
-    int interval = 1;
-
+    int interval = 1; // 1 second
 
     while(1) {
         adp_os_sleep(1000 * interval);
@@ -45,6 +44,7 @@ int main(void) {
     // Example of user task creation
     adp_os_start_task("Info-print", &test_publisher_1, 512, 6, NULL);
 
+
     // Example of first dispatcher creation with task prio 5 and items number 25
     adp_dispatcher_handle_t dispatcher_1 = adp_dispatcher_create(5, 25);
 
@@ -53,6 +53,11 @@ int main(void) {
 
     // Example of third dispatcher creation with the same configuration as above
     adp_dispatcher_handle_t dispatcher_3 = adp_dispatcher_create(4, 45);
+
+    // Debug printout of DBs
+    adp_dispatcher_db_print(dispatcher_1);
+    adp_dispatcher_db_print(dispatcher_2);
+    adp_dispatcher_db_print(dispatcher_3);
 
     // Example of adding few topics
     uint32_t topic_id   = 0x00000010;
@@ -71,13 +76,14 @@ int main(void) {
     int   data_length = strlen(data) + 1;
     adp_topic_publish(topic_id, data, data_length, ADP_TOPIC_PRIORITY_HIGH);
 
-   // adp_topic_publish(0x0, data, data_length, ADP_TOPIC_PRIORITY_HIGH);
-
     // Example of subscribing
     adp_topic_subscribe(0x000000FF, &test_subscriber_1, "test_subscriber_1");
     adp_topic_subscribe(0xFFFFFFFF, &test_subscriber_2, "catch_everything");
 
-    adp_dispatcher_db_print();
+    // Debug printout of DBs
+    adp_dispatcher_db_print(dispatcher_1);
+    adp_dispatcher_db_print(dispatcher_2);
+    adp_dispatcher_db_print(dispatcher_3);
 
     adp_os_start();
 

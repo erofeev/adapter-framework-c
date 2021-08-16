@@ -53,122 +53,39 @@ void adp_dispatcher_idle_cycle(adp_os_queue_handle_t queue)
     adp_log("-");
 }
 
-void adp_dispatcher_db_print()
+
+void adp_dispatcher_db_print(adp_dispatcher_handle_t dispatcher_handle)
 {
-    adp_log("------------------------------------------------------------------" );
+    adp_log("==================================================================" );
     adp_log("## | Dis.ID |   Handle   |  Topic.ID  |   Topic.NAME | Subscriber  " );
     adp_log("------------------------------------------------------------------" );
+    int counter = 1;
     for (int i = 0; i < ADP_DISPATCHER_TABLE_SIZE; ++i) {
-        if (!dispatcher_table[i].handle) {
+        if ( (!dispatcher_table[i].handle) || (dispatcher_table[i].handle != dispatcher_handle) ) {
             continue;
         }
         uint32_t id       = dispatcher_table[i].dispatcher_id;
         adp_dispatcher_handle_t handle = dispatcher_table[i].handle;
         uint32_t topic_id = dispatcher_table[i].topic_id;
         char  *topic_name = dispatcher_table[i].topic_name;
-        adp_log("%02d |   0x%02d | 0x%08x | 0x%08x | % 12s |",
-                i + 1, id, handle, topic_id, topic_name);
-        for (int i = 0; i < ADP_SUBSCRIBER_TABLE_SIZE; ++i) {
-            if (!subscriber_table[i].dest_cb) {
+        bool is_sub_found = false;
+        for (int j = 0; j < ADP_SUBSCRIBER_TABLE_SIZE; ++j) {
+            if (!subscriber_table[j].dest_cb) {
                 continue;
             }
-            if ((subscriber_table[i].topic_mask & topic_id) == topic_id) {
-                adp_log("                                                       %s", subscriber_table[i].dest_cb_name);
+            if ((subscriber_table[j].topic_mask & topic_id) == topic_id) {
+                is_sub_found = true;
+                adp_log("%02d |   0x%02d | 0x%08x | 0x%08x | % 12s | %s",
+                        counter++, id, handle, topic_id, topic_name, subscriber_table[j].dest_cb_name);
             }
+        }
+        if (is_sub_found == false) {
+            adp_log("%02d |   0x%02d | 0x%08x | 0x%08x | % 12s |", counter++, id, handle, topic_id, topic_name);
         }
         adp_log("------------------------------------------------------------------" );
     }
-
-
 }
 
-void adp_dispatcher_route_to_dest(adp_os_queue_handle_t queue, const adp_generic_msg_t *msg)
-{
-    bool no_subscriber = true;
-    char *name = "";
-    uint32_t topic_id = msg->topic_id;
-
-    // Get topic_name
-    for (int i = 0; i < ADP_DISPATCHER_TABLE_SIZE; ++i) {
-        if (dispatcher_table[i].topic_id == topic_id)
-            name = dispatcher_table[i].topic_name;
-    }
-    for (int i = 0; i < ADP_SUBSCRIBER_TABLE_SIZE; ++i) {
-        if (!subscriber_table[i].dest_cb) {
-            continue;
-        }
-        uint32_t mask = subscriber_table[i].topic_mask;
-        if ( (topic_id & mask) == topic_id ) {
-            no_subscriber = false;
-            adp_log_d("Topic 0x%08x '%s' -> subscriber '%s'", topic_id, name, subscriber_table[i].dest_cb_name);
-            adp_result_t result = subscriber_table[i].dest_cb(topic_id, msg->data, msg->length);
-            if (ADP_RESULT_SUCCESS != result) {
-                adp_log_e("Topic 0x%08x '%s'-> subscriber '%s' return error %d", topic_id, name, subscriber_table[i].dest_cb_name, result);
-            }
-            // Remove compiler warnings
-            UNUSED_VAR(result);
-        }
-    }
-    if (no_subscriber) {
-        adp_log_e("No subscriber found for 0x%08x '%s'", msg->topic_id, name);
-    }
-}
-
-void adp_dispatcher(void* data)
-{
-    const char* const     name  = adp_os_get_task_name();
-    adp_os_queue_handle_t queue = (adp_os_queue_handle_t)data;
-    const int             total = adp_queue_msg_total(queue);
-    adp_generic_msg_t     msg;
-
-    adp_log_d("Dispatcher %s started, msg capacity %d", name, total);
-
-    // Main dispatcher loop
-    while (1) {
-        adp_result_t result = adp_queue_receive(queue, &msg, 1000 /* = 1 sec */);
-        if (ADP_RESULT_SUCCESS == result) {
-            //
-            // Route incoming message to its destination
-            //
-            adp_dispatcher_route_to_dest(queue, &msg);
-
-            // Info about queue
-            adp_log_d("Queue usage: %d/%d", adp_queue_msg_waiting(queue), total);
-
-            // The message data is processed, thus free the space
-            if (msg.data) {
-                adp_os_free(msg.data);
-            }
-         } else if (ADP_RESULT_TIMEOUT == result) {
-             adp_dispatcher_idle_cycle(queue);
-         } else {
-             adp_log_e("Unable to read from queue");
-         }
-        adp_dispatcher_idle_cycle(queue);
-    }
-
-    // Remove compiler warnings
-    UNUSED_VAR(name);
-    UNUSED_VAR(total);
-}
-
-int adp_dispatcher_add(adp_dispatcher_handle_t handle, int id)
-{
-    int i = 0;
-    while ((dispatcher_table[i].handle != NULL) && (i < ADP_DISPATCHER_TABLE_SIZE)) {
-        i++;
-    }
-    if (i == ADP_DISPATCHER_TABLE_SIZE) {
-        adp_log_e("Unable to create dispatcher: No space left in DB");
-        return ADP_RESULT_NO_SPACE_LEFT;
-    }
-    memset(&dispatcher_table[i], 0x00, sizeof(adp_dispatcher_t));
-    dispatcher_table[i].dispatcher_id = id;
-    dispatcher_table[i].handle        = handle;
-    adp_log_d("New dispatcher #%d is registered", id);
-
-    return ADP_RESULT_SUCCESS;
-}
 
 adp_result_t adp_topic_register(adp_dispatcher_handle_t dispatcher_hnd, uint32_t topic_id, const char* topic_name)
 {
@@ -230,14 +147,18 @@ adp_result_t adp_topic_register(adp_dispatcher_handle_t dispatcher_hnd, uint32_t
     return ADP_RESULT_SUCCESS;
 }
 
+
 adp_result_t adp_topic_publish(uint32_t topic_id, const void * data, uint32_t data_length, adp_topic_prio_t prio)
 {
-    for (int i = 0; i < ADP_DISPATCHER_TABLE_SIZE; ++i) {
-        if (!dispatcher_table[i].handle) {
-            continue;
-        }
-        // Find the handle
-        if (dispatcher_table[i].topic_id == topic_id) {
+    if (topic_id) {
+        for (int i = 0; i < ADP_DISPATCHER_TABLE_SIZE; ++i) {
+            if (!dispatcher_table[i].handle) {
+                continue;
+            }
+            // Find the handle
+            if (dispatcher_table[i].topic_id != topic_id) {
+                continue;
+            }
             // Publish to dispatcher
             adp_generic_msg_t msg;
             msg.data = adp_os_malloc(data_length);
@@ -245,20 +166,22 @@ adp_result_t adp_topic_publish(uint32_t topic_id, const void * data, uint32_t da
                 return ADP_RESULT_NO_SPACE_LEFT;
             }
             memcpy(msg.data, data, data_length);
-            msg.length   = data_length;
+            msg.length = data_length;
             msg.topic_id = topic_id;
             adp_log_d("Publishing to 0x%08x '%s' size %d", topic_id, dispatcher_table[i].topic_name, data_length);
             if (ADP_RESULT_SUCCESS != adp_os_queue_put(dispatcher_table[i].handle, &msg)) {
                 adp_os_free(msg.data);
-                adp_log_e("Unable to publish to 0x%08x '%s' size %d", topic_id, dispatcher_table[i].topic_name, data_length);
+                adp_log_e("Unable to publish to 0x%08x '%s' size %d", topic_id,
+                        dispatcher_table[i].topic_name, data_length);
                 return ADP_RESULT_FAILED;
             }
             return ADP_RESULT_SUCCESS;
         }
     }
-    adp_log_e("Failed, 0x%08x is not registered", topic_id);
+    adp_log_e("Unable to publish to 0x%08x (not registered)", topic_id);
     return ADP_RESULT_INVALID_PARAMETER;
 }
+
 
 adp_result_t adp_topic_subscribe (uint32_t topic_mask, adp_topic_cb subscriber_cb, const char * subscriber_name)
 {
@@ -278,6 +201,99 @@ adp_result_t adp_topic_subscribe (uint32_t topic_mask, adp_topic_cb subscriber_c
 
     return ADP_RESULT_NO_SPACE_LEFT;
 }
+
+
+int dispatcher_add(adp_dispatcher_handle_t handle, int id)
+{
+    int i = 0;
+    while ((dispatcher_table[i].handle != NULL) && (i < ADP_DISPATCHER_TABLE_SIZE)) {
+        i++;
+    }
+    if (i == ADP_DISPATCHER_TABLE_SIZE) {
+        adp_log_e("Unable to create dispatcher: No space left in DB");
+        return ADP_RESULT_NO_SPACE_LEFT;
+    }
+    memset(&dispatcher_table[i], 0x00, sizeof(adp_dispatcher_t));
+    dispatcher_table[i].dispatcher_id = id;
+    dispatcher_table[i].handle        = handle;
+    adp_log_d("New dispatcher #%d is registered", id);
+
+    return ADP_RESULT_SUCCESS;
+}
+
+
+void dispatcher_route_to_dest(adp_os_queue_handle_t queue, const adp_generic_msg_t *msg)
+{
+    bool no_subscriber = true;
+    char *name = "";
+    uint32_t topic_id = msg->topic_id;
+
+    // Get topic_name
+    for (int i = 0; i < ADP_DISPATCHER_TABLE_SIZE; ++i) {
+        if (dispatcher_table[i].topic_id == topic_id)
+            name = dispatcher_table[i].topic_name;
+    }
+    for (int i = 0; i < ADP_SUBSCRIBER_TABLE_SIZE; ++i) {
+        if (!subscriber_table[i].dest_cb) {
+            continue;
+        }
+        uint32_t mask = subscriber_table[i].topic_mask;
+        if ( (topic_id & mask) == topic_id ) {
+            no_subscriber = false;
+            adp_log_d("Topic 0x%08x '%s' -> subscriber '%s'", topic_id, name, subscriber_table[i].dest_cb_name);
+            adp_result_t result = subscriber_table[i].dest_cb(topic_id, msg->data, msg->length);
+            if (ADP_RESULT_SUCCESS != result) {
+                adp_log_e("Topic 0x%08x '%s'-> subscriber '%s' return error %d", topic_id, name, subscriber_table[i].dest_cb_name, result);
+            }
+            // Remove compiler warnings
+            UNUSED_VAR(result);
+        }
+    }
+    if (no_subscriber) {
+        adp_log_e("No subscriber found for 0x%08x '%s'", msg->topic_id, name);
+    }
+}
+
+
+void dispatcher_task(void* data)
+{
+    const char* const     name  = adp_os_get_task_name();
+    adp_os_queue_handle_t queue = (adp_os_queue_handle_t)data;
+    const int             total = adp_queue_msg_total(queue);
+    adp_generic_msg_t     msg;
+
+    adp_log_d("Dispatcher %s started, msg capacity %d", name, total);
+
+    // Main dispatcher loop
+    while (1) {
+        adp_result_t result = adp_queue_receive(queue, &msg, 1000 /* = 1 sec */);
+        if (ADP_RESULT_SUCCESS == result) {
+            //
+            // Route incoming message to its destination
+            //
+            dispatcher_route_to_dest(queue, &msg);
+
+            // Info about queue
+            adp_log_d("Queue usage: %d/%d", adp_queue_msg_waiting(queue), total);
+
+            // The message data is processed, thus free the space
+            if (msg.data) {
+                adp_os_free(msg.data);
+            }
+         } else if (ADP_RESULT_TIMEOUT == result) {
+             adp_dispatcher_idle_cycle(queue);
+         } else {
+             adp_log_e("Unable to read from queue");
+         }
+        adp_dispatcher_idle_cycle(queue);
+    }
+
+    // Remove compiler warnings
+    UNUSED_VAR(name);
+    UNUSED_VAR(total);
+}
+
+
 adp_dispatcher_handle_t adp_dispatcher_create(uint32_t os_prio, uint32_t max_items)
 {
     static int d_cnt = 0;
@@ -299,7 +315,7 @@ adp_dispatcher_handle_t adp_dispatcher_create(uint32_t os_prio, uint32_t max_ite
     }
 
     // Start dispatcher with the queue
-    int result = adp_os_start_task(auto_name, &adp_dispatcher, 512, os_prio, (void*)queue);
+    int result = adp_os_start_task(auto_name, &dispatcher_task, 512, os_prio, (void*)queue);
 
     // Clean up, check results and exit
     if (auto_name) {
@@ -307,7 +323,7 @@ adp_dispatcher_handle_t adp_dispatcher_create(uint32_t os_prio, uint32_t max_ite
     }
 
     if (ADP_RESULT_SUCCESS == result) {
-        if (ADP_RESULT_SUCCESS == adp_dispatcher_add((adp_dispatcher_handle_t)queue, d_cnt)) {
+        if (ADP_RESULT_SUCCESS == dispatcher_add((adp_dispatcher_handle_t)queue, d_cnt)) {
             d_cnt++;
             return (adp_dispatcher_handle_t)queue;
         }

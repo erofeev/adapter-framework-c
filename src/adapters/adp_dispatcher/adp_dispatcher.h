@@ -8,7 +8,7 @@
 #define ADP_DISPATCHER_H_
 
 
-#undef ADP_DISPATCHER_MODULE_NO_DEBUG
+#define ADP_DISPATCHER_MODULE_NO_DEBUG
 
 #define ADP_DISPATCHER_TABLE_SIZE              50
 #define ADP_SUBSCRIBER_TABLE_SIZE              70
@@ -33,6 +33,6 @@ adp_result_t adp_topic_publish(uint32_t topic_id, const void* const data, uint32
 
 adp_result_t adp_topic_subscribe (uint32_t topic_mask, adp_topic_cb subscriber_cb, const char * subscriber_name);
 
-void adp_dispatcher_db_print(void);
+void adp_dispatcher_db_print(adp_dispatcher_handle_t dispatcher_handle);
 
 #endif /* ADP_DISPATCHER_H_ */
