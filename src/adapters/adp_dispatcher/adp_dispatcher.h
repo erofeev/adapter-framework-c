@@ -10,8 +10,8 @@
 
 #define ADP_DISPATCHER_MODULE_NO_DEBUG
 
-#define ADP_DISPATCHER_TABLE_SIZE              50
-#define ADP_SUBSCRIBER_TABLE_SIZE              70
+#define ADP_DISPATCHER_TABLE_SIZE              25
+#define ADP_SUBSCRIBER_TABLE_SIZE              25
 
 
 typedef enum {

@@ -61,8 +61,10 @@ void adp_dispatcher_db_print(adp_dispatcher_handle_t dispatcher_handle)
     adp_log("------------------------------------------------------------------" );
     int counter = 1;
     for (int i = 0; i < ADP_DISPATCHER_TABLE_SIZE; ++i) {
-        if ( (!dispatcher_table[i].handle) || (dispatcher_table[i].handle != dispatcher_handle) ) {
-            continue;
+        if (dispatcher_handle) { // Print records for all dispatchers (all the table) if NULL is specified
+            if ((!dispatcher_table[i].handle) || (dispatcher_table[i].handle != dispatcher_handle)) {
+                continue;
+            }
         }
         uint32_t id       = dispatcher_table[i].dispatcher_id;
         adp_dispatcher_handle_t handle = dispatcher_table[i].handle;
@@ -100,18 +102,19 @@ adp_result_t adp_topic_register(adp_dispatcher_handle_t dispatcher_hnd, uint32_t
     uint16_t dispatcher_id;
     bool     is_handle_in_the_table = false;
     int      empty_slot_id          = -1;
-    bool     topic_id_unique       = true;
+    bool     topic_id_unique        = true;
     for (int i = 0; i < ADP_DISPATCHER_TABLE_SIZE; ++i) {
         if (dispatcher_table[i].handle == dispatcher_hnd) {
             is_handle_in_the_table = true;
             dispatcher_id = dispatcher_table[i].dispatcher_id;
         }
         if (dispatcher_table[i].topic_id == 0x00000000) {
-            if ( (dispatcher_table[i].handle == 0) || (dispatcher_table[i].handle == dispatcher_hnd) )
-            if (empty_slot_id == -1) {
-                empty_slot_id = i;
+            if ( (dispatcher_table[i].handle == 0) || (dispatcher_table[i].handle == dispatcher_hnd) ) {
+                if (empty_slot_id == -1) {
+                    empty_slot_id = i;
+                }
+                continue;
             }
-            continue;
         }
         if (dispatcher_table[i].topic_id == topic_id) {
             topic_id_unique = false;
