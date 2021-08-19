@@ -60,7 +60,9 @@ announce:
 	@echo Compilation started
 
 build: announce | $(APP) 
-	@echo Done.
+	@echo " Done."
+	@mkdir -p bin
+	@mkdir -p build
 	@echo 
 
 all: build
@@ -70,7 +72,7 @@ clean:
 	@echo -n Cleaning... 
 	@rm -rf $(BUILD_DIR_NAME)/*
 	@rm -rf $(APP)
-	@echo Done
+	@echo "Done."
 	@echo 
 
 
