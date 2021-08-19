@@ -1,13 +1,15 @@
 
 APP_NAME := simple_example_app
-
+PLATFORM := linux
 
 
 # Final executable
 APP := bin/$(APP_NAME)
 
 # Directory naming conventions
-SRC_DIR_NAME := src
+SRC_DIR_NAME := applications/$(APP_NAME)
+SRC_DIR_NAME += platforms/abstract
+SRC_DIR_NAME += platforms/$(PLATFORM) 
 
 # output dir
 BUILD_DIR_NAME := build
@@ -23,7 +25,8 @@ LDFLAGS := -pthread -Wl,-Map=$(BUILD_DIR_NAME)/program.map,--cref
 
 
 # function to get obj file name from src file name
-OBJ_FROM_SRC = $(subst /$(SRC_DIR_NAME)/,/$(BUILD_DIR_NAME)/,$(1:%.c=%.o))
+#OBJ_FROM_SRC = $(subst /$(SRC_DIR_NAME)/,/$(BUILD_DIR_NAME)/,$(1:%.c=%.o))
+OBJ_FROM_SRC = $(addprefix $(BUILD_DIR_NAME)/,$(1:%.c=%.o))
 
 
 .PHONY: build announce
