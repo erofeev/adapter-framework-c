@@ -1,3 +1,11 @@
+
+APP_NAME := simple_example_app
+
+
+
+# Final executable
+APP := bin/$(APP_NAME)
+
 # Directory naming conventions
 SRC_DIR_NAME := src
 
@@ -5,8 +13,8 @@ SRC_DIR_NAME := src
 BUILD_DIR_NAME := build
 
 # source files list
-SRCS := $(shell find ./src -name '*.c')
-DEPS := $(shell find ./src -type d )
+SRCS := $(shell find ./$(SRC_DIR_NAME) -name '*.c')
+DEPS := $(shell find ./$(SRC_DIR_NAME) -type d )
 
 
 # FLAGS
@@ -17,8 +25,6 @@ LDFLAGS := -pthread -Wl,-Map=$(BUILD_DIR_NAME)/program.map,--cref
 # function to get obj file name from src file name
 OBJ_FROM_SRC = $(subst /$(SRC_DIR_NAME)/,/$(BUILD_DIR_NAME)/,$(1:%.c=%.o))
 
-# Final executable
-APP := bin/app
 
 .PHONY: build announce
 .DEFAULT_GOAL := build
@@ -31,6 +37,7 @@ OBJS := $$(OBJS) $$(obj)
 $$(obj): $$(src)
 # compile source code into objects
 	@echo -n     + $$<
+	@mkdir -p  $(dir $(OBJ_FROM_SRC))
 	@gcc $(CLFAGS) -c $$< -o $$@ $(addprefix -I,$(DEPS))
 	@echo 
 endef
@@ -47,13 +54,6 @@ $(APP): $(OBJS)
 
 announce:
 	@echo 
-	@mkdir -p build/adapters/adp_dispatcher
-	@mkdir -p build/adapters/adp_osal
-	@mkdir -p build/adapters/adp_mqtt_client
-	@mkdir -p build/adapters/adp_logging
-	@mkdir -p build/libs/log_c/build
-	@mkdir -p build/libs/FreeRTOS-Kernel/portable/MemMang
-	@mkdir -p build/libs/FreeRTOS-Kernel/portable/ThirdParty/GCC/Posix/utils
 	@echo Compilation started
 
 build: announce | $(APP) 
