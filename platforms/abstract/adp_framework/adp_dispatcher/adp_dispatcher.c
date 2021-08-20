@@ -48,11 +48,16 @@ adp_subscriber_t subscriber_table[ADP_SUBSCRIBER_TABLE_SIZE] = {0};
 
 
 ADP_WEAK
-void adp_dispatcher_idle_cycle(adp_os_queue_handle_t queue)
+void adp_dispatcher_cycle(bool busy, adp_os_queue_handle_t queue)
 {
     adp_log("-");
 }
 
+ADP_WEAK
+void adp_dispatcher_busy_cycle(adp_os_queue_handle_t queue)
+{
+    adp_log("-");
+}
 
 void adp_dispatcher_db_print(adp_dispatcher_handle_t dispatcher_handle)
 {
@@ -162,7 +167,7 @@ adp_result_t adp_topic_publish(uint32_t topic_id, const void * data, uint32_t da
             if (dispatcher_table[i].topic_id != topic_id) {
                 continue;
             }
-            // Publish to dispatcher
+            // Allocate a message space
             adp_generic_msg_t msg;
             msg.data = adp_os_malloc(data_length);
             if (!msg.data) {
@@ -171,6 +176,7 @@ adp_result_t adp_topic_publish(uint32_t topic_id, const void * data, uint32_t da
             memcpy(msg.data, data, data_length);
             msg.length = data_length;
             msg.topic_id = topic_id;
+            // Publish to dispatcher
             adp_log_d("Publishing to 0x%08x '%s' size %d", topic_id, dispatcher_table[i].topic_name, data_length);
             if (ADP_RESULT_SUCCESS != adp_os_queue_put(dispatcher_table[i].handle, &msg)) {
                 adp_os_free(msg.data);
@@ -198,6 +204,16 @@ adp_result_t adp_topic_subscribe (uint32_t topic_mask, adp_topic_cb subscriber_c
             subscriber_table[i].dest_cb      = subscriber_cb;
             snprintf(subscriber_table[i].dest_cb_name, ADP_DISPATCHER_SUBSCIBER_NAME_LENGTH, "%s",  subscriber_name);
             adp_log_d("Subscriber '%s' registered for 0x%08x", subscriber_name, topic_mask);
+            // Print all topics that corresponds to the mask
+            for (int k = 0; k < ADP_DISPATCHER_TABLE_SIZE; ++k) {
+                if (!dispatcher_table[k].topic_id) {
+                    continue;
+                }
+                if ( (dispatcher_table[k].topic_id & topic_mask) == dispatcher_table[k].topic_id) {
+                    adp_log_d("Subscriber '%s' will be notified on topic '%s' 0x%08x",
+                            subscriber_name, dispatcher_table[k].topic_name, dispatcher_table[k].topic_id);
+                }
+            }
             return ADP_RESULT_SUCCESS;
         }
     }
@@ -284,11 +300,11 @@ void dispatcher_task(void* data)
                 adp_os_free(msg.data);
             }
          } else if (ADP_RESULT_TIMEOUT == result) {
-             adp_dispatcher_idle_cycle(queue);
+             adp_dispatcher_cycle(false, queue); // this function could be used for e.g. stats
          } else {
              adp_log_e("Unable to read from queue");
          }
-        adp_dispatcher_idle_cycle(queue);
+        adp_dispatcher_cycle(true, queue);
     }
 
     // Remove compiler warnings

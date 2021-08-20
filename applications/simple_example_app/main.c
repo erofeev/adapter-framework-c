@@ -84,6 +84,7 @@ int main(void) {
     adp_dispatcher_db_print(dispatcher_1);
     adp_dispatcher_db_print(dispatcher_2);
     adp_dispatcher_db_print(dispatcher_3);
+    adp_dispatcher_db_print(NULL);
 
     adp_os_start();
 

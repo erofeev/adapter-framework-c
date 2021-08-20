@@ -57,12 +57,12 @@ $(APP): $(OBJS)
 
 announce:
 	@echo 
+	@mkdir -p bin
+	@mkdir -p build
 	@echo Compilation started
 
 build: announce | $(APP) 
 	@echo " Done."
-	@mkdir -p bin
-	@mkdir -p build
 	@echo 
 
 all: build
