@@ -6,15 +6,13 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdint.h>
 
-#include "adp_osal.h"
 #include "adp_dispatcher.h"
 #include "adp_logging.h"
 
 #define ADP_DISPATCHER_TASK_NAME_TEMPLATE      "ADP#x@x"
-#define ADP_DISPATCHER_TOPIC_NAME_LENGTH       12
-#define ADP_DISPATCHER_SUBSCIBER_NAME_LENGTH   18
+#define ADP_DISPATCHER_TOPIC_NAME_LENGTH       25
+#define ADP_DISPATCHER_SUBSCIBER_NAME_LENGTH   25
 
 
 #ifdef ADP_DISPATCHER_MODULE_NO_DEBUG
@@ -50,14 +48,9 @@ adp_subscriber_t subscriber_table[ADP_SUBSCRIBER_TABLE_SIZE] = {0};
 ADP_WEAK
 void adp_dispatcher_cycle(bool busy, adp_os_queue_handle_t queue)
 {
-    adp_log("-");
+    // TBD
 }
 
-ADP_WEAK
-void adp_dispatcher_busy_cycle(adp_os_queue_handle_t queue)
-{
-    adp_log("-");
-}
 
 void adp_dispatcher_db_print(adp_dispatcher_handle_t dispatcher_handle)
 {
@@ -78,6 +71,9 @@ void adp_dispatcher_db_print(adp_dispatcher_handle_t dispatcher_handle)
         bool is_sub_found = false;
         for (int j = 0; j < ADP_SUBSCRIBER_TABLE_SIZE; ++j) {
             if (!subscriber_table[j].dest_cb) {
+                continue;
+            }
+            if (!topic_id) {
                 continue;
             }
             if ((subscriber_table[j].topic_mask & topic_id) == topic_id) {
@@ -167,7 +163,7 @@ adp_result_t adp_topic_publish(uint32_t topic_id, const void * data, uint32_t da
             if (dispatcher_table[i].topic_id != topic_id) {
                 continue;
             }
-            // Allocate a message space
+            // Allocate space
             adp_generic_msg_t msg;
             msg.data = adp_os_malloc(data_length);
             if (!msg.data) {
@@ -180,7 +176,7 @@ adp_result_t adp_topic_publish(uint32_t topic_id, const void * data, uint32_t da
             adp_log_d("Publishing to 0x%08x '%s' size %d", topic_id, dispatcher_table[i].topic_name, data_length);
             if (ADP_RESULT_SUCCESS != adp_os_queue_put(dispatcher_table[i].handle, &msg)) {
                 adp_os_free(msg.data);
-                adp_log_e("Unable to publish to 0x%08x '%s' size %d", topic_id,
+                adp_log_e("Failed to publish to 0x%08x '%s' size %d", topic_id,
                         dispatcher_table[i].topic_name, data_length);
                 return ADP_RESULT_FAILED;
             }

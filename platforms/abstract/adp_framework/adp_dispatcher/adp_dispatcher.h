@@ -7,8 +7,11 @@
 #ifndef ADP_DISPATCHER_H_
 #define ADP_DISPATCHER_H_
 
+#include <stdint.h>
 
-#undef ADP_DISPATCHER_MODULE_NO_DEBUG
+#include "adp_osal.h"
+
+#define ADP_DISPATCHER_MODULE_NO_DEBUG
 
 #define ADP_DISPATCHER_TABLE_SIZE              10
 #define ADP_SUBSCRIBER_TABLE_SIZE              5
@@ -22,7 +25,7 @@ typedef enum {
 
 typedef void* adp_dispatcher_handle_t;
 
-typedef adp_result_t (adp_topic_cb)(uint16_t topic_id, void* data, uint32_t len);
+typedef adp_result_t (adp_topic_cb)(uint32_t topic_id, void* data, uint32_t len);
 
 
 adp_dispatcher_handle_t adp_dispatcher_create(uint32_t os_prio, uint32_t max_items);

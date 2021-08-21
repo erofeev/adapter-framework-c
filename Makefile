@@ -2,6 +2,8 @@
 APP_NAME := simple_example_app
 PLATFORM := linux
 
+CCACHE := 
+CC     := gcc
 
 # Final executable
 APP := bin/$(APP_NAME)
@@ -20,8 +22,9 @@ DEPS := $(shell find ./$(SRC_DIR_NAME) -type d )
 
 
 # FLAGS
-CLFAGS  := -Wall
-LDFLAGS := -pthread -Wl,-Map=$(BUILD_DIR_NAME)/program.map,--cref
+CFLAGS  := -Wall -Wshadow -Wundef -Winit-self -Wpointer-arith
+CFLAGS  += -fdata-sections -ffunction-sections -Os
+LDFLAGS := -pthread -Wl,-Map=$(BUILD_DIR_NAME)/$(APP_NAME).map,--cref -Wl,--gc-sections
 
 
 # function to get obj file name from src file name
@@ -41,7 +44,7 @@ $$(obj): $$(src)
 # compile source code into objects
 	@echo -n     + $$<
 	@mkdir -p  $(dir $(OBJ_FROM_SRC))
-	@gcc $(CLFAGS) -c $$< -o $$@ $(addprefix -I,$(DEPS))
+	@$(CCACHE) $(CC) $(CFLAGS) -c $$< -o $$@ $(addprefix -I,$(DEPS))
 	@echo 
 endef
 

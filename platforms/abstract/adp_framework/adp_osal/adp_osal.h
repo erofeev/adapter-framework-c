@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 
-#define UNUSED_VAR(x) (void)x
+#define UNUSED_VAR(x)              (void)x
 #define ADP_WEAK                   __attribute__((weak))
 
 typedef enum {

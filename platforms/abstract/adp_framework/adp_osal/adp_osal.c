@@ -102,7 +102,7 @@ adp_result_t adp_queue_receive(adp_os_queue_handle_t queue, void * const item, u
 
 adp_result_t adp_os_queue_put(adp_os_queue_handle_t queue, const void *item)
 {
-    BaseType_t result = xQueueSend(queue, item, 0 /* immediately */ );
+    BaseType_t result = xQueueSend(queue, item, 100 /* 100 ms */ );
 
     if (result == errQUEUE_FULL) {
         return ADP_RESULT_NO_SPACE_LEFT;
