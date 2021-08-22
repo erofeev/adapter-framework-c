@@ -1,13 +1,14 @@
 ##
 #
-#
+#  Makefile
 #
 ##
 
 APP_NAME            := simple_console_app
 APP_CONFIG          := app_config.h
 PLATFORM_TARGET     := linux
-PLATFORM_COMPONENTS := FreeRTOS-Kernel
+PLATFORM_COMPONENTS := adp_framework
+PLATFORM_COMPONENTS += FreeRTOS-Kernel
 PLATFORM_COMPONENTS += log_c
 
 
@@ -22,7 +23,7 @@ APP_INCLUDE_CONFIG := applications/$(APP_NAME)/$(APP_CONFIG)
 # Directory naming conventions
 SRC_DIR_NAME := applications/$(APP_NAME)
 SRC_DIR_NAME += platforms/abstract
-SRC_DIR_NAME += platforms/$(PLATFORM_TARGET) 
+SRC_DIR_NAME += $(addprefix platforms/$(PLATFORM_TARGET)/,$(PLATFORM_COMPONENTS))
 
 # Default output dir
 BUILD_DIR_NAME := build
@@ -64,8 +65,8 @@ $(foreach src,$(SRCS),$(eval $(call obj_rule_by_src,$(src))))
 
 $(APP): $(OBJS)
 # link objects
-	@echo --------- Linking ----------
-	@echo -n  "Executable [$@] - "
+	@echo "\n\r--------- Linking ----------"
+	@echo "Executable [$@]"
 	@gcc $(LDFLAGS) $^ -o $@ 
 
 
@@ -73,12 +74,16 @@ announce:
 	@echo 
 	@mkdir -p bin
 	@mkdir -p $(BUILD_DIR_NAME)
-	@echo Project config file [$(APP_INCLUDE_CONFIG)]
+	@echo "Application [$(APP_NAME)]\n\r"
+	@echo "Project config file [$(APP_INCLUDE_CONFIG)] \n\r"
 	@cp -rf $(APP_INCLUDE_CONFIG) $(BUILD_DIR_NAME)/
-	@echo Compilation started
+	@echo "Building..."
 
-build: announce | $(APP) 
+build: announce | $(APP)
+	@echo "Size:"
+	@size $(APP)
 	@echo "Done."
+	@echo 
 	@echo 
 
 all: build

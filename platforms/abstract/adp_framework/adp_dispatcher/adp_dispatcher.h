@@ -11,11 +11,6 @@
 
 #include "adp_osal.h"
 
-#define ADP_DISPATCHER_MODULE_NO_DEBUG
-
-#define ADP_DISPATCHER_TABLE_SIZE              10
-#define ADP_SUBSCRIBER_TABLE_SIZE              5
-
 
 typedef enum {
     ADP_TOPIC_PRIORITY_NORMAL  = 0,
