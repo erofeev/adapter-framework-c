@@ -20,7 +20,7 @@
 char *adp_console_get_next_arg(const char *current_arg)
 {
     while (*current_arg++ != 0) ;
-    return current_arg;
+    return (char*)current_arg;
 }
 
 

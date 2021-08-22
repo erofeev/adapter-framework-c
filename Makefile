@@ -1,19 +1,30 @@
+##
+#
+#
+#
+##
 
-APP_NAME := simple_example_app
-PLATFORM := linux
+APP_NAME            := simple_console_app
+APP_CONFIG          := app_config.h
+PLATFORM_TARGET     := linux
+PLATFORM_COMPONENTS := FreeRTOS-Kernel
+PLATFORM_COMPONENTS += log_c
 
-CCACHE := 
+
+# Build system variables, rules and targets
+CCACHE := ccache
 CC     := gcc
 
-# Final executable
-APP := bin/$(APP_NAME)
+# Final executable and config
+APP                := bin/$(APP_NAME)
+APP_INCLUDE_CONFIG := applications/$(APP_NAME)/$(APP_CONFIG)
 
 # Directory naming conventions
 SRC_DIR_NAME := applications/$(APP_NAME)
 SRC_DIR_NAME += platforms/abstract
-SRC_DIR_NAME += platforms/$(PLATFORM) 
+SRC_DIR_NAME += platforms/$(PLATFORM_TARGET) 
 
-# output dir
+# Default output dir
 BUILD_DIR_NAME := build
 
 # source files list
@@ -44,7 +55,7 @@ $$(obj): $$(src)
 # compile source code into objects
 	@echo -n     + $$<
 	@mkdir -p  $(dir $(OBJ_FROM_SRC))
-	@$(CCACHE) $(CC) $(CFLAGS) -c $$< -o $$@ $(addprefix -I,$(DEPS))
+	@$(CCACHE) $(CC) -include $(APP_INCLUDE_CONFIG) $(CFLAGS) -c $$< -o $$@ $(addprefix -I,$(DEPS))
 	@echo 
 endef
 
@@ -54,18 +65,20 @@ $(foreach src,$(SRCS),$(eval $(call obj_rule_by_src,$(src))))
 $(APP): $(OBJS)
 # link objects
 	@echo --------- Linking ----------
-	@echo -n  Build $@  -
+	@echo -n  "Executable [$@] - "
 	@gcc $(LDFLAGS) $^ -o $@ 
 
 
 announce:
 	@echo 
 	@mkdir -p bin
-	@mkdir -p build
+	@mkdir -p $(BUILD_DIR_NAME)
+	@echo Project config file [$(APP_INCLUDE_CONFIG)]
+	@cp -rf $(APP_INCLUDE_CONFIG) $(BUILD_DIR_NAME)/
 	@echo Compilation started
 
 build: announce | $(APP) 
-	@echo " Done."
+	@echo "Done."
 	@echo 
 
 all: build

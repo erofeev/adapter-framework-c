@@ -13,6 +13,9 @@
 #include "adp_console.h"
 #include "adp_logging.h"
 
+#include "app_config.h"
+#include "app_console.h"
+
 
 void test_subpub(void* params)
 {
@@ -21,22 +24,14 @@ void test_subpub(void* params)
     while(1) {
         adp_os_sleep(1000 * interval);
         adp_log("uptime is %d seconds", adp_os_uptime());
+
+        // Print the whole DB
         char *data        = "db\n";
         int   data_length = strlen(data) + 1;
         adp_topic_publish(ADP_TOPIC_SYSTEM_CLI_INPUT_STREAM, data, data_length, ADP_TOPIC_PRIORITY_HIGH);
     }
 }
 
-int app_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
-{
-    adp_log("APP CLI CMD executor, cmd = [%s]", data);
-
-    if (strcmp("db", data) == 0) {
-        adp_dispatcher_db_print(NULL);
-    }
-
-    return ADP_RESULT_SUCCESS;
-}
 
 int main(void) {
     adp_log("Creating the World");
