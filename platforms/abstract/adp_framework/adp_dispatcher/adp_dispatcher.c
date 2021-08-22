@@ -10,10 +10,8 @@
 #include "adp_dispatcher.h"
 #include "adp_logging.h"
 
-#define ADP_DISPATCHER_TASK_NAME_TEMPLATE      "ADP#x@x"
-#define ADP_DISPATCHER_TOPIC_NAME_LENGTH       25
-#define ADP_DISPATCHER_SUBSCIBER_NAME_LENGTH   25
 
+#define ADP_DISPATCHER_TASK_NAME_TEMPLATE      "ADP#x@x"
 
 #ifdef ADP_DISPATCHER_MODULE_NO_DEBUG
  #ifdef adp_log_d
@@ -22,17 +20,18 @@
  #endif
 #endif
 
+
 typedef struct {
     adp_dispatcher_handle_t       handle;
     uint16_t               dispatcher_id;
     uint32_t                    topic_id;
-    char                      topic_name[ADP_DISPATCHER_TOPIC_NAME_LENGTH];
+    char                      topic_name[ADP_DISPATCHER_TOPIC_NAME_SIZE];
 } adp_dispatcher_t;
 
 typedef struct {
     uint32_t                  topic_mask;
     adp_topic_cb                *dest_cb;
-    char                    dest_cb_name[ADP_DISPATCHER_SUBSCIBER_NAME_LENGTH];
+    char                    dest_cb_name[ADP_DISPATCHER_SUBSCIBER_NAME_SIZE];
 } adp_subscriber_t;
 
 typedef struct {
@@ -40,6 +39,7 @@ typedef struct {
     uint32_t    length;
     void       *data;
 } adp_generic_msg_t;
+
 
 adp_dispatcher_t dispatcher_table[ADP_DISPATCHER_TABLE_SIZE] = {0};
 adp_subscriber_t subscriber_table[ADP_SUBSCRIBER_TABLE_SIZE] = {0};
@@ -144,7 +144,7 @@ adp_result_t adp_topic_register(adp_dispatcher_handle_t dispatcher_hnd, uint32_t
     dispatcher_table[empty_slot_id].handle        = dispatcher_hnd;
     dispatcher_table[empty_slot_id].dispatcher_id = dispatcher_id;
     dispatcher_table[empty_slot_id].topic_id      = topic_id;
-    snprintf(dispatcher_table[empty_slot_id].topic_name, ADP_DISPATCHER_TOPIC_NAME_LENGTH, "%s", topic_name);
+    snprintf(dispatcher_table[empty_slot_id].topic_name, ADP_DISPATCHER_TOPIC_NAME_SIZE, "%s", topic_name);
     adp_log_d("Topic 0x%08x '%s' registered at dispatcher #%d",
             topic_id, topic_name, dispatcher_id);
 
@@ -198,7 +198,7 @@ adp_result_t adp_topic_subscribe (uint32_t topic_mask, adp_topic_cb subscriber_c
         if (!subscriber_table[i].dest_cb) {
             subscriber_table[i].topic_mask   = topic_mask;
             subscriber_table[i].dest_cb      = subscriber_cb;
-            snprintf(subscriber_table[i].dest_cb_name, ADP_DISPATCHER_SUBSCIBER_NAME_LENGTH, "%s",  subscriber_name);
+            snprintf(subscriber_table[i].dest_cb_name, ADP_DISPATCHER_SUBSCIBER_NAME_SIZE, "%s",  subscriber_name);
             adp_log_d("Subscriber '%s' registered for 0x%08x", subscriber_name, topic_mask);
             // Print all topics that corresponds to the mask
             for (int k = 0; k < ADP_DISPATCHER_TABLE_SIZE; ++k) {

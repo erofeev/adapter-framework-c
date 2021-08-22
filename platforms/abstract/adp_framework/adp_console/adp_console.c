@@ -10,11 +10,17 @@
 #include "adp_console.h"
 
 
-#define ADP_CONSOLE_MAX_CMD_SIZE            40
 #define ADP_ASCII_LF                      0x0A
 #define ADP_ASCII_CR                      0x0D
 #define ADP_ASCII_BACKSPACE               0x08
 #define ADP_ASCII_SPACE                   ' '
+
+#ifdef ADP_CONSOLE_MODULE_NO_DEBUG
+ #ifdef adp_log_d
+  #undef  adp_log_d
+  #define adp_log_d(...)
+ #endif
+#endif
 
 
 char *adp_console_get_next_arg(const char *current_arg)
