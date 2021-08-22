@@ -16,8 +16,8 @@
 #ifdef ADP_DISPATCHER_MODULE_NO_DEBUG
  #ifdef adp_log_d
   #undef  adp_log_d
-  #define adp_log_d(...)
  #endif
+ #define adp_log_d(...)
 #endif
 
 

@@ -12,8 +12,8 @@
 #include "app_console.h"
 
 
-#define HANDLE_CMD(CMD_NAME, data, length)     cmd_##CMD_NAME(data, length)
-#define HANDLING_CMD(CMD_NAME)                 void cmd_##CMD_NAME(const char *data, int length)
+#define HANDLE_CMD(CMD_NAME, data, length)     cmd_##CMD_NAME(data, argc)
+#define HANDLING_CMD(CMD_NAME)                 void cmd_##CMD_NAME(const char *data, int argc)
 
 
 HANDLING_CMD(HELP)
@@ -29,20 +29,15 @@ HANDLING_CMD(DB)
 
 int app_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 {
-    ADP_ASSERT(data,"Null pointer instead of cmd");
-    ADP_ASSERT(len, "Cmd length = 0!");
-
     const char *cmd = data;
     int  argc = *cmd;
     const char* cmd_name = ++cmd;
 
-    adp_log_d("APP CLI CMD executor, cmd = [%s] argc = %d", cmd_name, argc);
-
     if (strcmp(cmd_name, "db"  ) == 0) {
-        HANDLE_CMD(DB, data, len);
+        HANDLE_CMD(DB, cmd_name, argc);
     } else
     if (strcmp(cmd_name, "help") == 0) {
-        HANDLE_CMD(HELP, data, len);
+        HANDLE_CMD(HELP, cmd_name, argc);
     }
 
     return ADP_RESULT_SUCCESS;

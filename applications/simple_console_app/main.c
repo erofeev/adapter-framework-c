@@ -19,7 +19,8 @@
 
 void test_subpub(void* params)
 {
-    int interval = 1; // 15 seconds
+    UNUSED_VAR(params);
+    int interval = 15; // 15 seconds
 
     while(1) {
         adp_os_sleep(1000 * interval);

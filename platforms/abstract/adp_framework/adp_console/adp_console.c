@@ -13,13 +13,13 @@
 #define ADP_ASCII_LF                      0x0A
 #define ADP_ASCII_CR                      0x0D
 #define ADP_ASCII_BACKSPACE               0x08
-#define ADP_ASCII_SPACE                   ' '
+#define ADP_ASCII_SPACE                   0x20
 
 #ifdef ADP_CONSOLE_MODULE_NO_DEBUG
  #ifdef adp_log_d
   #undef  adp_log_d
-  #define adp_log_d(...)
  #endif
+ #define adp_log_d(...)
 #endif
 
 
@@ -49,6 +49,7 @@ int console_handler(uint32_t topic_id, void* data, uint32_t len)
                 //
                 if (cmd_idx) {
                     cmd_line[cmd_idx] = 0x00;
+                    adp_log_d("CLI cmd[] argc = %d", cmd_line, *argc);
                     adp_topic_publish(ADP_TOPIC_SYSTEM_CLI_EXECUTE_CMD, buffer, cmd_idx + 1 /* NUll */ + 1 /* argc */, ADP_TOPIC_PRIORITY_NORMAL);
                 }
 

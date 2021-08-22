@@ -35,7 +35,8 @@ DEPS := $(shell find ./$(SRC_DIR_NAME) -type d )
 
 
 # FLAGS
-CFLAGS  := -Wall -Wshadow -Wundef -Winit-self -Wpointer-arith
+CFLAGS  := -Wall -Wshadow -Wundef -Winit-self -Wpointer-arith 
+CFLAGS  += -Wextra -Wno-unused-parameter -Wunused-but-set-variable -Werror  -Wunused-but-set-parameter -Wundef -Warray-bounds
 CFLAGS  += -fdata-sections -ffunction-sections -Os
 LDFLAGS := -pthread -Wl,-Map=$(BUILD_DIR_NAME)/$(APP_NAME).map,--cref -Wl,--gc-sections
 
@@ -53,7 +54,7 @@ define obj_rule_by_src =
 src := $(1)
 obj := $$(call OBJ_FROM_SRC,$$(src))
 OBJS := $$(OBJS) $$(obj)
-$$(obj): $$(src) $(HDRS) $(APP_INCLUDE_CONFIG)
+$$(obj): $$(src) $(HDRS) $(APP_INCLUDE_CONFIG) 
 # compile source code into objects
 	@echo -n     + $$<
 	@mkdir -p  $(dir $(OBJ_FROM_SRC))
@@ -96,5 +97,3 @@ clean:
 	@rm -rf $(APP)
 	@echo "Done."
 	@echo 
-
-
