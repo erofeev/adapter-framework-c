@@ -16,7 +16,7 @@
 #define ADP_SUBSCRIBER_TABLE_SIZE                     5
 
 // ADP Console settings
-#undef ADP_CONSOLE_MODULE_NO_DEBUG
+#define ADP_CONSOLE_MODULE_NO_DEBUG
 #define ADP_CONSOLE_MAX_CMD_SIZE                     40
 
 

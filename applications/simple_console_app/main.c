@@ -19,16 +19,15 @@
 
 void test_subpub(void* params)
 {
-    int interval = 15; // 15 seconds
+    int interval = 1; // 15 seconds
 
     while(1) {
         adp_os_sleep(1000 * interval);
         adp_log("uptime is %d seconds", adp_os_uptime());
 
         // Print the whole DB
-        char *data        = "db\n";
-        int   data_length = strlen(data) + 1;
-        adp_topic_publish(ADP_TOPIC_SYSTEM_CLI_INPUT_STREAM, data, data_length, ADP_TOPIC_PRIORITY_HIGH);
+        char  *data = "db\n";
+        adp_topic_publish(ADP_TOPIC_SYSTEM_CLI_INPUT_STREAM, data, strlen(data) + 1, ADP_TOPIC_PRIORITY_HIGH);
     }
 }
 

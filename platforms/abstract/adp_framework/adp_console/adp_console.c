@@ -32,10 +32,11 @@ char *adp_console_get_next_arg(const char *current_arg)
 
 int console_handler(uint32_t topic_id, void* data, uint32_t len)
 {
-    static char cmd_line[ADP_CONSOLE_MAX_CMD_SIZE];
-    static int  cmd_idx = 0;
-    static int  argc    = 0;
-    const char *in_stream = (const char*)data;
+    static char buffer[ADP_CONSOLE_MAX_CMD_SIZE];
+    static unsigned char   * const argc    = (unsigned char*)&(buffer[0]);
+    static          char         *cmd_line = &(buffer[1]);
+    static          int            cmd_idx = 0;
+    const           char        *in_stream = (const char*)data;
 
     while (len--) {
         const char ch = *in_stream++;
@@ -48,13 +49,13 @@ int console_handler(uint32_t topic_id, void* data, uint32_t len)
                 //
                 if (cmd_idx) {
                     cmd_line[cmd_idx] = 0x00;
-                    adp_topic_publish(ADP_TOPIC_SYSTEM_CLI_EXECUTE_CMD, cmd_line, cmd_idx + 1, ADP_TOPIC_PRIORITY_NORMAL);
+                    adp_topic_publish(ADP_TOPIC_SYSTEM_CLI_EXECUTE_CMD, buffer, cmd_idx + 1 /* NUll */ + 1 /* argc */, ADP_TOPIC_PRIORITY_NORMAL);
                 }
 
                 // Reset cmd line
                 cmd_idx = 0;
                 cmd_line[0] = 0x00;
-                argc = 0;
+                *argc = 0;
                 goto done;
             }
             // If backspace received
@@ -88,7 +89,7 @@ int console_handler(uint32_t topic_id, void* data, uint32_t len)
                 }
                 // Start of new argument detected
                 cmd_line[cmd_idx++] = 0x00;
-                argc++;
+                *argc = *argc + 1;
             } else {
                 cmd_line[cmd_idx++] = ch;
             }

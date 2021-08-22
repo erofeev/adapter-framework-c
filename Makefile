@@ -30,6 +30,7 @@ BUILD_DIR_NAME := build
 
 # source files list
 SRCS := $(shell find ./$(SRC_DIR_NAME) -name '*.c')
+HDRS := $(shell find ./$(SRC_DIR_NAME) -name '*.h')
 DEPS := $(shell find ./$(SRC_DIR_NAME) -type d )
 
 
@@ -52,7 +53,7 @@ define obj_rule_by_src =
 src := $(1)
 obj := $$(call OBJ_FROM_SRC,$$(src))
 OBJS := $$(OBJS) $$(obj)
-$$(obj): $$(src)
+$$(obj): $$(src) $(HDRS) $(APP_INCLUDE_CONFIG)
 # compile source code into objects
 	@echo -n     + $$<
 	@mkdir -p  $(dir $(OBJ_FROM_SRC))
@@ -65,7 +66,7 @@ $(foreach src,$(SRCS),$(eval $(call obj_rule_by_src,$(src))))
 
 $(APP): $(OBJS)
 # link objects
-	@echo "\n\r--------- Linking ----------"
+	@echo "\n--------- Linking ----------"
 	@echo "Executable [$@]"
 	@gcc $(LDFLAGS) $^ -o $@ 
 

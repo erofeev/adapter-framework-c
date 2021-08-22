@@ -20,7 +20,7 @@ typedef enum {
     ADP_RESULT_SUCCESS = 0,
 } adp_result_t;
 
-#define ADP_ASSERT(A, MSG)         do { if (!A) { adp_log_f(MSG); while(1); } } while (0)
+#define ADP_ASSERT(A, MSG)         do { if (!A) adp_log_f(MSG); } while (0)
 
 
 typedef void (adp_os_start_task_t)(void* );
