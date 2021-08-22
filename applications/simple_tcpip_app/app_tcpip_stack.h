@@ -4,13 +4,14 @@
  ============================================================================
  */
 
-#ifndef ADAPTERS_ADP_UART_H_
-#define ADAPTERS_ADP_UART_H_
+#ifndef APP_TCPIP_STACK_H_
+#define APP_TCPIP_STACK_H_
 
 
-char adp_uart_getchar(void);
-
-void adp_uart_putchar(char c);
+#include <stdint.h>
 
 
-#endif /* ADAPTERS_ADP_UART_H_ */
+int app_net_status_handler(uint32_t topic_id, void* data, uint32_t len);
+
+
+#endif

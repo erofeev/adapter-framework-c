@@ -4,8 +4,8 @@
  ============================================================================
  */
 
-#ifndef ADAPTERS_ADP_OSAL_ADP_OSAL_H_
-#define ADAPTERS_ADP_OSAL_ADP_OSAL_H_
+#ifndef ADAPTERS_ADP_OSAL_H_
+#define ADAPTERS_ADP_OSAL_H_
 
 #include <stdint.h>
 
@@ -62,5 +62,10 @@ int adp_queue_msg_total(adp_os_queue_handle_t queue);
 
 int adp_queue_msg_waiting(adp_os_queue_handle_t queue);
 
+// Debug Util
+void adp_os_get_tasks_rtstats(char *buffer);
 
-#endif /* ADAPTERS_ADP_OSAL_ADP_OSAL_H_ */
+void adp_os_get_tasks_list(char *buffer);
+
+
+#endif /* ADAPTERS_ADP_OSAL_H_ */

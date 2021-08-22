@@ -32,11 +32,11 @@ HANDLING_CMD(OS)
 {
     char *buffer = adp_os_malloc(256);
     if (buffer) {
-        adp_os_get_tasks_rtstats(buffer);
+        memset(buffer, 0x00, 256);
+        adp_os_get_tasks_list(buffer);
         adp_log("\n\r%s", buffer);
         adp_os_free(buffer);
     }
-
 }
 
 int app_cmd_handler(uint32_t topic_id, void* data, uint32_t len)

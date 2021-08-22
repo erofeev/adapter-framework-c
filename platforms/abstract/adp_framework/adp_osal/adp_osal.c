@@ -5,6 +5,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "FreeRTOS.h"
@@ -31,6 +32,12 @@ void vApplicationDaemonTaskStartupHook( void )
     adp_log("OS started");
 }
 
+ADP_WEAK
+BaseType_t xApplicationGetRandomNumber( uint32_t * pulNumber )
+{
+    *( pulNumber ) = rand();
+    return pdTRUE;
+}
 
 ADP_WEAK
 size_t xPortGetFreeHeapSize(void)
@@ -75,6 +82,16 @@ char* adp_os_get_task_name(void)
 int adp_os_get_free_heap_size(void)
 {
     return (int)xPortGetFreeHeapSize();
+}
+
+void adp_os_get_tasks_rtstats(char *buffer)
+{
+    vTaskGetRunTimeStats(buffer);
+}
+
+void adp_os_get_tasks_list(char *buffer)
+{
+    vTaskList(buffer);
 }
 
 void adp_os_sleep(uint32_t time_ms)

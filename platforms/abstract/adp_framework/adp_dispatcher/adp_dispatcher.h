@@ -4,8 +4,8 @@
  ============================================================================
  */
 
-#ifndef ADP_DISPATCHER_H_
-#define ADP_DISPATCHER_H_
+#ifndef ADAPTERS_ADP_DISPATCHER_H_
+#define ADAPTERS_ADP_DISPATCHER_H_
 
 #include <stdint.h>
 
@@ -34,4 +34,4 @@ adp_result_t adp_topic_subscribe (uint32_t topic_mask, adp_topic_cb subscriber_c
 void adp_dispatcher_db_print(adp_dispatcher_handle_t dispatcher_handle);
 
 
-#endif /* ADP_DISPATCHER_H_ */
+#endif /* ADAPTERS_ADP_DISPATCHER_H_ */
