@@ -9,6 +9,7 @@ APP_CONFIG          := app_config.h
 PLATFORM_TARGET     := linux
 PLATFORM_COMPONENTS := adp_framework
 PLATFORM_COMPONENTS += FreeRTOS-Kernel
+PLATFORM_COMPONENTS += FreeRTOS-Plus-TCP
 PLATFORM_COMPONENTS += log_c
 
 
@@ -36,9 +37,9 @@ DEPS := $(shell find ./$(SRC_DIR_NAME) -type d )
 
 # FLAGS
 CFLAGS  := -Wall -Wshadow -Wundef -Winit-self -Wpointer-arith 
-CFLAGS  += -Wextra -Wno-unused-parameter -Wunused-but-set-variable -Werror  -Wunused-but-set-parameter -Wundef -Warray-bounds
-CFLAGS  += -fdata-sections -ffunction-sections -Os
-LDFLAGS := -pthread -Wl,-Map=$(BUILD_DIR_NAME)/$(APP_NAME).map,--cref -Wl,--gc-sections
+CFLAGS  += -Wextra -Wno-unused-parameter -Wunused-but-set-variable   -Wunused-but-set-parameter -Wundef -Warray-bounds
+CFLAGS  += -fdata-sections -ffunction-sections -O2
+LDFLAGS := -pthread -lpcap -Wl,-Map=$(BUILD_DIR_NAME)/$(APP_NAME).map,--cref -Wl,--gc-sections
 
 
 # function to get obj file name from src file name
@@ -69,7 +70,7 @@ $(APP): $(OBJS)
 # link objects
 	@echo "\n--------- Linking ----------"
 	@echo "Executable [$@]"
-	@gcc $(LDFLAGS) $^ -o $@ 
+	@gcc $^ -o $@ $(LDFLAGS)
 
 
 announce:
