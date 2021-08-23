@@ -17,7 +17,7 @@ APP_INCLUDE_CONFIG := applications/$(APP_NAME)/$(APP_CONFIG)
 
 # Directory naming conventions
 SRC_DIR_NAME := applications/$(APP_NAME)
-SRC_DIR_NAME += platforms/abstract
+SRC_DIR_NAME += $(addprefix platforms/common/,$(COMMON_COMPONENTS))
 SRC_DIR_NAME += $(addprefix platforms/$(PLATFORM_TARGET)/,$(PLATFORM_COMPONENTS))
 
 # Default output dir

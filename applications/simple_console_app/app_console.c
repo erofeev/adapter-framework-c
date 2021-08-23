@@ -32,7 +32,7 @@ HANDLING_CMD(OS)
 {
     char *buffer = adp_os_malloc(256);
     if (buffer) {
-        adp_os_get_tasks_rtstats(buffer);
+        adp_os_get_tasks_list(buffer);
         adp_log("\n\r%s", buffer);
         adp_os_free(buffer);
     }
