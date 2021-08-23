@@ -4,8 +4,12 @@
 #
 ##
 
-include applications/simple_tcpip_app/build.mk
-#include applications/simple_console_app/build.mk
+#include applications/simple_tcpip_app/build.mk
+include applications/simple_console_app/build.mk
+
+
+PRINT_COMPONENTS := $(addprefix \\n  -- [common] ,$(COMMON_COMPONENTS))
+PRINT_COMPONENTS += $(addprefix \\n  -- [$(PLATFORM_TARGET)]  ,$(PLATFORM_COMPONENTS))
 
 # Build system variables, rules and targets
 CCACHE := ccache
@@ -74,6 +78,9 @@ announce:
 	@echo "Application [$(APP_NAME)]\n\r"
 	@echo "Project config file [$(APP_INCLUDE_CONFIG)] \n\r"
 	@cp -rf $(APP_INCLUDE_CONFIG) $(BUILD_DIR_NAME)/
+	@echo -n "List of included components: "
+	@echo "${PRINT_COMPONENTS}"
+	@echo ""
 	@echo "Building..."
 
 build: announce | $(APP)
