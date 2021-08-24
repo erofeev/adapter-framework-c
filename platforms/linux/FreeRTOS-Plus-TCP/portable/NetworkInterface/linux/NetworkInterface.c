@@ -72,7 +72,7 @@ static void * prvLinuxPcapRecvThread( void * pvParam );
 static void prvInterruptSimulatorTask( void * pvParameters );
 static void prvPrintAvailableNetworkInterfaces( pcap_if_t * pxAllNetworkInterfaces );
 static pcap_if_t * prvGetAvailableNetworkInterfaces( void );
-static const char * prvRemoveSpaces( char * pcBuffer,
+const char * prvRemoveSpaces( char * pcBuffer,
                                      int aBuflen,
                                      const char * pcMessage );
 static int prvOpenSelectedNetworkInterface( pcap_if_t * pxAllNetworkInterfaces );
