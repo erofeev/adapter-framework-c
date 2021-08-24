@@ -41,15 +41,6 @@
 //#define ipconfigSOCK_DEFAULT_RECEIVE_BLOCK_TIME  pdMS_TO_TICKS(5000)
 #define configNETWORK_INTERFACE_TO_USE 1L
 
-/* The address of an echo server that will be used by the two demo echo client
-tasks.
-http://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_TCP/TCP_Echo_Clients.html
-http://www.freertos.org/FreeRTOS-Plus/FreeRTOS_Plus_TCP/UDP_Echo_Clients.html */
-
-#define configECHO_SERVER_ADDR0 172
-#define configECHO_SERVER_ADDR1 19
-#define configECHO_SERVER_ADDR2 195
-#define configECHO_SERVER_ADDR3 36
 
 /* Default MAC address configuration.  The demo creates a virtual network
 connection that uses this MAC address by accessing the raw Ethernet/WiFi data
@@ -95,25 +86,29 @@ ipconfigUSE_DNS is set to 1 but a DNS server cannot be contacted. */
 #define configNET_MASK2     240
 #define configNET_MASK3       0
 
-/* The UDP port to which print messages are sent. */
-#define configPRINT_PORT    ( 15000 )
-
 /* Used to insert test code only. */
 #define niDISRUPT_PACKETS   0
 
 /* Prototype for the function used to print out.  In this case it prints to the
 console before the network is connected then a UDP port after the network has
 connected. */
-#define  vLoggingPrintf             (void)
 
+
+/* Set to 1 to print out debug messages.  If ipconfigHAS_DEBUG_PRINTF is set to
+ * 1 then FreeRTOS_debug_printf should be defined to the function used to print
+ * out the debugging messages. */
+#define ipconfigHAS_DEBUG_PRINTF    0
+#if ( ipconfigHAS_DEBUG_PRINTF == 1 )
+    #define FreeRTOS_debug_printf( X )    printf X
+#endif
 
 /* Set to 1 to print out non debugging messages, for example the output of the
-FreeRTOS_netstat() command, and ping replies.  If ipconfigHAS_PRINTF is set to 1
-then FreeRTOS_printf should be set to the function used to print out the
-messages. */
-#define ipconfigHAS_PRINTF          0
-#if( ipconfigHAS_PRINTF == 1 )
-    #define FreeRTOS_printf(X)          vLoggingPrintf X
+ * FreeRTOS_netstat() command, and ping replies.  If ipconfigHAS_PRINTF is set to 1
+ * then FreeRTOS_printf should be set to the function used to print out the
+ * messages. */
+#define ipconfigHAS_PRINTF    0
+#if ( ipconfigHAS_PRINTF == 1 )
+    #define FreeRTOS_printf( X )    printf X
 #endif
 
 /* Define the byte order of the target MCU (the MCU FreeRTOS+TCP is executing

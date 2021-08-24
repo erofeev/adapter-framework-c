@@ -4,8 +4,8 @@
 #
 ##
 
-#include applications/simple_tcpip_app/build.mk
-include applications/simple_console_app/build.mk
+include applications/simple_tcpip_app/build.mk
+#include applications/simple_console_app/build.mk
 
 
 PRINT_COMPONENTS := $(addprefix \\n  -- [common] ,$(COMMON_COMPONENTS))
