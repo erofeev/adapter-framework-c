@@ -58,7 +58,7 @@
     eConsiderFrameForProcessing( ( pucEthernetBuffer ) )
 #endif
 
-#define FreeRTOS_printf (void)
+
 /* ============================== Definitions =============================== */
 #define xSEND_BUFFER_SIZE    32768
 #define xRECV_BUFFER_SIZE    32768

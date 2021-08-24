@@ -41,7 +41,7 @@ HANDLING_CMD(OS)
 
 HANDLING_CMD(NETSTAT)
 {
-    FreeRTOS_netstat();
+    //FreeRTOS_netstat();
 }
 
 int app_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
