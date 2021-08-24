@@ -39,6 +39,11 @@ HANDLING_CMD(OS)
     }
 }
 
+HANDLING_CMD(NETSTAT)
+{
+    FreeRTOS_netstat();
+}
+
 int app_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 {
     const char *cmd = data;
@@ -50,6 +55,9 @@ int app_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
     } else
     if (strcmp(cmd_name, "os"  ) == 0) {
         HANDLE_CMD(OS, cmd_name, argc);
+    } else
+    if (strcmp(cmd_name, "netstat"  ) == 0) {
+        HANDLE_CMD(NETSTAT, cmd_name, argc);
     } else {
         HANDLE_CMD(HELP, cmd_name, argc);
     }

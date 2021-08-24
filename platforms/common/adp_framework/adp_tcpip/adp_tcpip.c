@@ -116,6 +116,7 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
 
 adp_result_t adp_tcpip_initialize(adp_dispatcher_handle_t dispatcher)
 {
+    // Register topics
     adp_topic_register(dispatcher, ADP_TOPIC_SYSTEM_NET_TCPIP_STATUS, "NET.Status");
 
     /*
