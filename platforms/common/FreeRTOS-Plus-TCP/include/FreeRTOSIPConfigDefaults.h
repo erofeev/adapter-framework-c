@@ -224,7 +224,7 @@
 #endif /* ifdef ipconfigHAS_PRINTF */
 
 #ifndef FreeRTOS_printf
-    #define FreeRTOS_printf( MSG )    do {} while( ipFALSE_BOOL )
+    #define FreeRTOS_printf( ... )
     #define ipconfigHAS_PRINTF    0
 #endif
 

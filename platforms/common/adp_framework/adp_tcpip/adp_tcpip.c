@@ -79,12 +79,14 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
 {
     uint32_t ulIPAddress, ulNetMask, ulGatewayAddress, ulDNSServerAddress;
     char cBuffer[ 16 ];
+    uint32_t event_data[5];
+    adp_net_tcpip_status_t adp_net_status;
 
     /* If the network has just come up...*/
     if( eNetworkEvent == eNetworkUp )
     {
+        adp_net_status = ADP_NET_TCPIP_STACK_UP;
         adp_log_d("IP net is up");
-
         FreeRTOS_GetAddressConfiguration( &ulIPAddress, &ulNetMask, &ulGatewayAddress, &ulDNSServerAddress );
         FreeRTOS_inet_ntoa( ulIPAddress, cBuffer );
         adp_log_d("IP Address: %s", cBuffer ) ;
@@ -98,12 +100,17 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
         FreeRTOS_inet_ntoa( ulDNSServerAddress, cBuffer );
         adp_log_d ( "DNS Server Address: %s", cBuffer ) ;
     } else {
+        adp_net_status = ADP_NET_TCPIP_STACK_DOWN;
         adp_log_d("IP net is down" );
     }
 
     // Publish info
-    int data = eNetworkEvent;
-    adp_topic_publish(ADP_TOPIC_SYSTEM_NET_TCPIP_STATUS, &data, sizeof(data), ADP_TOPIC_PRIORITY_HIGH);
+    event_data[0] = adp_net_status;
+    event_data[1] = ulIPAddress;
+    event_data[1] = ulNetMask;
+    event_data[1] = ulGatewayAddress;
+    event_data[1] = ulDNSServerAddress;
+    adp_topic_publish(ADP_TOPIC_SYSTEM_NET_TCPIP_STATUS, &event_data, sizeof(event_data), ADP_TOPIC_PRIORITY_HIGH);
 }
 
 

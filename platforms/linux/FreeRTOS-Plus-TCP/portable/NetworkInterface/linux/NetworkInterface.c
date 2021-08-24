@@ -248,6 +248,7 @@ static void prvPrintAvailableNetworkInterfaces( pcap_if_t * pxAllNetworkInterfac
     int32_t lInterfaceNumber = 1;
     char cBuffer[ 512 ];
 
+    (void)cBuffer;
     if( pxAllNetworkInterfaces != NULL )
     {
         /* Print out the list of network interfaces.  The first in the list
@@ -258,15 +259,15 @@ static void prvPrintAvailableNetworkInterfaces( pcap_if_t * pxAllNetworkInterfac
             /* The descriptions of the devices can be full of spaces, clean them
              * a little.  printf() can only be used here because the network is not
              * up yet - so no other network tasks will be running. */
-            printf( "Interface %d - %s\n",
+            FreeRTOS_printf( "Interface %d - %s\n",
                     lInterfaceNumber,
                     prvRemoveSpaces( cBuffer, sizeof( cBuffer ), xInterface->name ) );
-            printf( "              (%s)\n",
+            FreeRTOS_printf( "              (%s)\n",
                     prvRemoveSpaces( cBuffer,
                                      sizeof( cBuffer ),
                                      xInterface->description ? xInterface->description :
                                      "No description" ) );
-            printf( "\n" );
+            FreeRTOS_printf( "\n" );
             lInterfaceNumber++;
         }
     }
@@ -275,19 +276,19 @@ static void prvPrintAvailableNetworkInterfaces( pcap_if_t * pxAllNetworkInterfac
     {
         /* The interface number was never incremented, so the above for() loop
          * did not execute meaning no interfaces were found. */
-        printf( " \nNo network interfaces were found.\n" );
+        FreeRTOS_printf( " \nNo network interfaces were found.\n" );
         pxAllNetworkInterfaces = NULL;
     }
 
-    printf( "\r\nThe interface that will be opened is set by " );
-    printf( "\"configNETWORK_INTERFACE_TO_USE\", which\r\nshould be defined in FreeRTOSConfig.h\r\n" );
+    FreeRTOS_printf( "\r\nThe interface that will be opened is set by " );
+    FreeRTOS_printf( "\"configNETWORK_INTERFACE_TO_USE\", which\r\nshould be defined in FreeRTOSConfig.h\r\n" );
 
     if( ( xConfigNetworkInterfaceToUse < 1L ) || ( xConfigNetworkInterfaceToUse >= lInterfaceNumber ) )
     {
-        printf( "\r\nERROR:  configNETWORK_INTERFACE_TO_USE is set to %ld, which is an invalid value.\r\n", xConfigNetworkInterfaceToUse );
-        printf( "Please set configNETWORK_INTERFACE_TO_USE to one of the interface numbers listed above,\r\n" );
-        printf( "then re-compile and re-start the application.  Only Ethernet (as opposed to WiFi)\r\n" );
-        printf( "interfaces are supported.\r\n\r\nHALTING\r\n\r\n\r\n" );
+        FreeRTOS_printf( "\r\nERROR:  configNETWORK_INTERFACE_TO_USE is set to %ld, which is an invalid value.\r\n", xConfigNetworkInterfaceToUse );
+        FreeRTOS_printf( "Please set configNETWORK_INTERFACE_TO_USE to one of the interface numbers listed above,\r\n" );
+        FreeRTOS_printf( "then re-compile and re-start the application.  Only Ethernet (as opposed to WiFi)\r\n" );
+        FreeRTOS_printf( "interfaces are supported.\r\n\r\nHALTING\r\n\r\n\r\n" );
         xInvalidInterfaceDetected = pdTRUE;
 
         if( pxAllNetworkInterfaces != NULL )
@@ -299,7 +300,7 @@ static void prvPrintAvailableNetworkInterfaces( pcap_if_t * pxAllNetworkInterfac
     }
     else
     {
-        printf( "Attempting to open interface number %ld.\n", xConfigNetworkInterfaceToUse );
+        FreeRTOS_printf( "Attempting to open interface number %ld.\n", xConfigNetworkInterfaceToUse );
     }
 }
 
@@ -324,7 +325,7 @@ static pcap_if_t * prvGetAvailableNetworkInterfaces( void )
         }
         else
         {
-            printf( "\r\n\r\nThe following network interfaces are available:\r\n\r\n" );
+            FreeRTOS_printf( "\r\n\r\nThe following network interfaces are available:\r\n\r\n" );
         }
     }
 
@@ -584,8 +585,7 @@ static int prvConfigureCaptureBehaviour( void )
 
     if( ret < 0 )
     {
-        ( void ) printf( "\nThe packet filter string is invalid %s\n",
-                         pcap_geterr( pxOpenedInterfaceHandle ) );
+        ( void ) printf( "\nThe packet filter string is invalid %s\n", pcap_geterr( pxOpenedInterfaceHandle )  );
     }
     else
     {
@@ -593,8 +593,7 @@ static int prvConfigureCaptureBehaviour( void )
 
         if( ret < 0 )
         {
-            ( void ) printf( "\nAn error occurred setting the packet filter. %s\n",
-                             pcap_geterr( pxOpenedInterfaceHandle ) );
+            ( void ) printf(  "\nAn error occurred setting the packet filter. %s\n", pcap_geterr( pxOpenedInterfaceHandle )  );
         }
         else
         {
@@ -840,7 +839,7 @@ static void prvInterruptSimulatorTask( void * pvParameters )
  * @param [in] pcMessage original message
  * @returns
  */
-static const char * prvRemoveSpaces( char * pcBuffer,
+const char * prvRemoveSpaces( char * pcBuffer,
                                      int aBuflen,
                                      const char * pcMessage )
 {
