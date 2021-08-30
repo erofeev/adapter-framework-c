@@ -3,8 +3,8 @@
 #  Makefile
 #
 ##
-
-include applications/simple_tcpip_app/build.mk
+include applications/simple_mqtt_app/build.mk
+#include applications/simple_tcpip_app/build.mk
 #include applications/simple_console_app/build.mk
 
 

@@ -29,7 +29,7 @@ typedef struct {
 } adp_dispatcher_t;
 
 typedef struct {
-    uint32_t                  topic_mask;
+    uint32_t                topic_target;
     adp_topic_cb                *dest_cb;
     char                    dest_cb_name[ADP_DISPATCHER_SUBSCIBER_NAME_SIZE];
 } adp_subscriber_t;
@@ -76,7 +76,7 @@ void adp_dispatcher_db_print(adp_dispatcher_handle_t dispatcher_handle)
             if (!topic_id) {
                 continue;
             }
-            if ((subscriber_table[j].topic_mask & topic_id) == topic_id) {
+            if (subscriber_table[j].topic_target == topic_id) {
                 is_sub_found = true;
                 adp_log("%02d |   0x%02d | 0x%08x | 0x%08x | % 12s | %s",
                         counter++, id, handle, topic_id, topic_name, subscriber_table[j].dest_cb_name);
@@ -188,7 +188,7 @@ adp_result_t adp_topic_publish(uint32_t topic_id, const void * data, uint32_t da
 }
 
 
-adp_result_t adp_topic_subscribe (uint32_t topic_mask, adp_topic_cb subscriber_cb, const char * subscriber_name)
+adp_result_t adp_topic_subscribe (uint32_t topic_target, adp_topic_cb subscriber_cb, const char * subscriber_name)
 {
     if (!subscriber_name) {
         subscriber_name = "";
@@ -196,16 +196,16 @@ adp_result_t adp_topic_subscribe (uint32_t topic_mask, adp_topic_cb subscriber_c
     for (int i = 0; i < ADP_SUBSCRIBER_TABLE_SIZE; ++i) {
         // Find an empty slot and store the subscription details
         if (!subscriber_table[i].dest_cb) {
-            subscriber_table[i].topic_mask   = topic_mask;
+            subscriber_table[i].topic_target = topic_target;
             subscriber_table[i].dest_cb      = subscriber_cb;
             snprintf(subscriber_table[i].dest_cb_name, ADP_DISPATCHER_SUBSCIBER_NAME_SIZE, "%s",  subscriber_name);
-            adp_log_d("Subscriber '%s' registered for 0x%08x", subscriber_name, topic_mask);
+            adp_log_d("Subscriber '%s' registered for 0x%08x", subscriber_name, topic_target);
             // Print all topics that corresponds to the mask
             for (int k = 0; k < ADP_DISPATCHER_TABLE_SIZE; ++k) {
                 if (!dispatcher_table[k].topic_id) {
                     continue;
                 }
-                if ( (dispatcher_table[k].topic_id & topic_mask) == dispatcher_table[k].topic_id) {
+                if (dispatcher_table[k].topic_id == topic_target) {
                     adp_log_d("Subscriber '%s' will be notified on topic '%s' 0x%08x",
                             subscriber_name, dispatcher_table[k].topic_name, dispatcher_table[k].topic_id);
                 }
@@ -252,8 +252,8 @@ void dispatcher_route_to_dest(adp_os_queue_handle_t queue, const adp_generic_msg
         if (!subscriber_table[i].dest_cb) {
             continue;
         }
-        uint32_t mask = subscriber_table[i].topic_mask;
-        if ( (topic_id & mask) == topic_id ) {
+        uint32_t topic_target = subscriber_table[i].topic_target;
+        if (topic_id == topic_target) {
             no_subscriber = false;
             adp_log_d("Topic 0x%08x '%s' -> subscriber '%s'", topic_id, name, subscriber_table[i].dest_cb_name);
             adp_result_t result = subscriber_table[i].dest_cb(topic_id, msg->data, msg->length);
