@@ -12,7 +12,7 @@ PRINT_COMPONENTS := $(addprefix \\n  -- [common] ,$(COMMON_COMPONENTS))
 PRINT_COMPONENTS += $(addprefix \\n  -- [$(PLATFORM_TARGET)]  ,$(PLATFORM_COMPONENTS))
 
 # Build system variables, rules and targets
-CCACHE := ccache
+CCACHE := 
 CC     := gcc
 
 # Final executable and config

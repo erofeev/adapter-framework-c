@@ -16,6 +16,7 @@ COMMON_COMPONENTS   += adp_framework/adp_mqtt
 COMMON_COMPONENTS   += adp_framework/adp_uart
 COMMON_COMPONENTS   += FreeRTOS-Kernel
 COMMON_COMPONENTS   += FreeRTOS-Plus-TCP
+COMMON_COMPONENTS   += coreMQTT
 
 PLATFORM_TARGET     := linux
 PLATFORM_COMPONENTS := adp_framework/adp_uart

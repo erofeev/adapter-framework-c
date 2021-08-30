@@ -11,10 +11,11 @@
 #include "adp_dispatcher.h"
 #include "adp_console.h"
 #include "adp_tcpip.h"
+#include "adp_mqtt.h"
 #include "adp_logging.h"
 
 #include "app_console.h"
-#include "app_tcpip_stack.h"
+#include "app_mqtt.h"
 
 
 void print_info(void* params)
@@ -45,11 +46,14 @@ int main(void) {
     adp_topic_subscribe(ADP_TOPIC_SYSTEM_CLI_EXECUTE_CMD, &app_cmd_handler, "App CMD handler");
 
     // Run TCP/IP stack
-    adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create(3, 25);
+    adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create(3, 5);
     adp_tcpip_initialize(network_dispatcher);
     adp_topic_subscribe(ADP_TOPIC_SYSTEM_NET_TCPIP_STATUS, &app_net_status_handler, "App NET handler");
 
-
+    // Run MQTT client
+    adp_dispatcher_handle_t mqtt_dispatcher = adp_dispatcher_create(3, 25);
+    adp_mqtt_initialize(mqtt_dispatcher);
+    adp_topic_subscribe(ADP_TOPIC_SYSTEM_MQTT_STATUS, &app_mqtt_status_handler, "App MQTT handler");
 
     adp_os_start();
 

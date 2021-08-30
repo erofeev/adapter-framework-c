@@ -19,8 +19,9 @@
 HANDLING_CMD(HELP)
 {
     adp_log("Supported commands:");
-    adp_log("\t db - print DB table");
-    adp_log("\t os - print OS runtime stats");
+    adp_log("\t db        - print DB table");
+    adp_log("\t netstat   - print network runtime stats");
+    adp_log("\t os        - print OS runtime stats");
 }
 
 HANDLING_CMD(DB)
@@ -41,7 +42,8 @@ HANDLING_CMD(OS)
 
 HANDLING_CMD(NETSTAT)
 {
-    //FreeRTOS_netstat();
+    extern void FreeRTOS_netstat( void );
+    FreeRTOS_netstat();
 }
 
 int app_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
