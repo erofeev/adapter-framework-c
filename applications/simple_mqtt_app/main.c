@@ -21,7 +21,7 @@
 void print_info(void* params)
 {
     UNUSED_VAR(params);
-    int interval = 15; // 15 seconds
+    int interval = 60*5; // 5 minutes
 
     while(1) {
         adp_os_sleep(1000 * interval);

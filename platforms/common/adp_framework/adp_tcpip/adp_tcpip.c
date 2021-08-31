@@ -107,9 +107,9 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
     // Publish info
     event_data[0] = adp_net_status;
     event_data[1] = ulIPAddress;
-    event_data[1] = ulNetMask;
-    event_data[1] = ulGatewayAddress;
-    event_data[1] = ulDNSServerAddress;
+    event_data[2] = ulNetMask;
+    event_data[3] = ulGatewayAddress;
+    event_data[4] = ulDNSServerAddress;
     adp_topic_publish(ADP_TOPIC_SYSTEM_NET_TCPIP_STATUS, &event_data, sizeof(event_data), ADP_TOPIC_PRIORITY_HIGH);
 }
 

@@ -20,11 +20,11 @@
 #define ADP_CONSOLE_MAX_CMD_SIZE                     40
 
 // APP Network settings
-#define ADP_TCPIP_MODULE_NO_DEBUG
+#undef ADP_TCPIP_MODULE_NO_DEBUG
 #define ADP_NET_HOSTNAME                             "AdpHostName"
 
 // APP MQTT settings
-#define ADP_MQTT_MODULE_NO_DEBUG
+#undef ADP_MQTT_MODULE_NO_DEBUG
 
 
 // Topics DB

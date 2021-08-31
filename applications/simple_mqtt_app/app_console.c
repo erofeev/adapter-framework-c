@@ -31,11 +31,12 @@ HANDLING_CMD(DB)
 
 HANDLING_CMD(OS)
 {
+    uint32_t uptime = adp_os_uptime_ms();
     char *buffer = adp_os_malloc(256);
     if (buffer) {
         memset(buffer, 0x00, 256);
         adp_os_get_tasks_list(buffer);
-        adp_log("\n\r%s", buffer);
+        adp_log("\n\r\n\rUptime - %lu.%03d seconds\n%s", uptime/1000, uptime%1000, buffer);
         adp_os_free(buffer);
     }
 }

@@ -12,6 +12,7 @@
 #include "adp_tcpip.h"
 #include "adp_mqtt.h"
 
+
 int app_net_status_handler(uint32_t topic_id, void* data, uint32_t len)
 {
     adp_net_tcpip_status_t status = *(adp_net_tcpip_status_t*)data;

@@ -92,6 +92,7 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
         return ADP_RESULT_FAILED;
     }
 
+    // Notify users on status change
     result.command = topic->command;
     adp_topic_publish(ADP_TOPIC_SYSTEM_MQTT_STATUS, &result, sizeof(adp_mqtt_status_t), ADP_TOPIC_PRIORITY_HIGH);
 
