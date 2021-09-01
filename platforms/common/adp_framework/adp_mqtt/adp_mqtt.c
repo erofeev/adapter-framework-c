@@ -22,11 +22,10 @@
  #define adp_log_d(...)
 #endif
 
- struct NetworkContext
- {
+typedef struct NetworkContext {
      void* tcpSocketContext;
      void* tlsContext;
- };
+ } adp_network_context_t;
 
 typedef struct adp_mqtt_session {
      MQTTContext_t             context;
@@ -78,7 +77,8 @@ adp_result_t mqtt_do_init(adp_mqtt_status_t *result, adp_mqtt_cmd_t* cmd_data)
 
     // Set transport interface members
     TransportInterface_t      transport_if;
- //   transport.pNetworkContext = &mqttContext; FIXME Something we will need to put here...
+    adp_network_context_t    *network_ctx = adp_os_malloc(sizeof(adp_network_context_t));
+    transport_if.pNetworkContext = network_ctx;
     transport_if.send = (TransportSend_t)mqtt_network_send;
     transport_if.recv = (TransportRecv_t)mqtt_network_recv;
 
@@ -187,7 +187,7 @@ adp_result_t adp_mqtt_initialize(adp_dispatcher_handle_t dispatcher)
     adp_topic_register(dispatcher, ADP_TOPIC_MQTT_EXECUTE_CMD, "MQTT.ExecuteCmd");
 
     // Subscribe for commands
-    adp_topic_subscribe(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_cmd_handler, "MQTT.Executor");
+    adp_topic_subscribe(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_cmd_handler, "ADP.MQTT.SVC.Executor");
 
     return ADP_RESULT_SUCCESS;
 }

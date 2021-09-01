@@ -120,7 +120,7 @@ void adp_console_task(void* params)
         adp_topic_register(dispatcher, ADP_TOPIC_CLI_INPUT_STREAM, "CLI.InputStream");
         adp_topic_register(dispatcher, ADP_TOPIC_CLI_EXECUTE_CMD , "CLI.ExecuteCmd");
     }
-    adp_topic_subscribe(ADP_TOPIC_CLI_INPUT_STREAM, &console_handler, "CLI.StreamHandler");
+    adp_topic_subscribe(ADP_TOPIC_CLI_INPUT_STREAM, &console_handler, "ADP.CLI.SVC.Executor");
 
     while (1) {
         char c __attribute__ ((aligned (sizeof(void*)))) = adp_uart_getchar();

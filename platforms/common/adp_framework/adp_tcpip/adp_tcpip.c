@@ -88,17 +88,17 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
         adp_net_status = ADP_NET_TCPIP_STACK_UP;
         adp_log_d("IP net is up");
         FreeRTOS_GetAddressConfiguration( &ulIPAddress, &ulNetMask, &ulGatewayAddress, &ulDNSServerAddress );
-        FreeRTOS_inet_ntoa( ulIPAddress, cBuffer );
-        adp_log_d("IP Address: %s", cBuffer ) ;
+        FreeRTOS_inet_ntoa( ulIPAddress, cBuffer);
+        adp_log_d("IP Address: %s", cBuffer) ;
 
-        FreeRTOS_inet_ntoa( ulNetMask, cBuffer );
-        adp_log_d ( "Subnet Mask: %s", cBuffer ) ;
+        FreeRTOS_inet_ntoa( ulNetMask, cBuffer);
+        adp_log_d("Subnet Mask: %s", cBuffer);
 
-        FreeRTOS_inet_ntoa( ulGatewayAddress, cBuffer );
-        adp_log_d ( "Gateway Address: %s", cBuffer ) ;
+        FreeRTOS_inet_ntoa( ulGatewayAddress, cBuffer);
+        adp_log_d("Gateway Address: %s", cBuffer);
 
-        FreeRTOS_inet_ntoa( ulDNSServerAddress, cBuffer );
-        adp_log_d ( "DNS Server Address: %s", cBuffer ) ;
+        FreeRTOS_inet_ntoa( ulDNSServerAddress, cBuffer);
+        adp_log_d("DNS Server Address: %s", cBuffer);
 
         event_data[1] = ulIPAddress;
         event_data[2] = ulNetMask;
@@ -115,14 +115,22 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
 
     // Publish info
     event_data[0] = adp_net_status;
-    adp_topic_publish(ADP_TOPIC_NET_TCPIP_STATUS, &event_data, sizeof(event_data), ADP_TOPIC_PRIORITY_HIGH);
+    adp_topic_publish(ADP_TOPIC_IPNET_IPSTATUS, &event_data, sizeof(event_data), ADP_TOPIC_PRIORITY_HIGH);
+}
+
+
+int tcpip_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
+{
+    return ADP_RESULT_SUCCESS;
 }
 
 
 adp_result_t adp_tcpip_initialize(adp_dispatcher_handle_t dispatcher)
 {
     // Register topics
-    adp_topic_register(dispatcher, ADP_TOPIC_NET_TCPIP_STATUS, "NET.Status");
+    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_IPSTATUS, "IPNET.Status");
+    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_EXECUTE_CMD, "IPNET.ExecuteCmd");
+    adp_topic_subscribe(ADP_TOPIC_IPNET_EXECUTE_CMD, &tcpip_cmd_handler, "ADP.IPNET.SVC.Executor");
 
     /*
      ***NOTE*** Tasks that use the network are created in the network event hook

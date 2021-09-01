@@ -48,7 +48,7 @@ int main(void) {
     // Run TCP/IP stack
     adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create(3, 5);
     adp_tcpip_initialize(network_dispatcher);
-    adp_topic_subscribe(ADP_TOPIC_NET_TCPIP_STATUS, &app_net_status_handler, "App NET handler");
+    adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS, &app_net_status_handler, "App NET handler");
 
     // Run MQTT client
     adp_dispatcher_handle_t mqtt_dispatcher = adp_dispatcher_create(3, 25);

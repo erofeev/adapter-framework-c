@@ -54,9 +54,9 @@ void adp_dispatcher_cycle(bool busy, adp_os_queue_handle_t queue)
 
 void adp_dispatcher_db_print(adp_dispatcher_handle_t dispatcher_handle)
 {
-    adp_log("==================================================================" );
-    adp_log("## | Dis.ID |   Handle   |  Topic.ID  |   Topic.NAME | Subscriber  " );
-    adp_log("------------------------------------------------------------------" );
+    adp_log("=========================================================================" );
+    adp_log("## | Dis.ID |   Handle   |  Topic.ID  |   Topic.NAME         | Subscriber  " );
+    adp_log("-------------------------------------------------------------------------" );
     int counter = 1;
     for (int i = 0; i < ADP_DISPATCHER_TABLE_SIZE; ++i) {
         if (dispatcher_handle) { // Print records for all dispatchers (all the table) if NULL is specified
@@ -78,14 +78,14 @@ void adp_dispatcher_db_print(adp_dispatcher_handle_t dispatcher_handle)
             }
             if (subscriber_table[j].topic_target == topic_id) {
                 is_sub_found = true;
-                adp_log("%02d |   0x%02d | 0x%08x | 0x%08x | % 12s | %s",
+                adp_log("%02d |   0x%02d | 0x%08x | 0x%08x | % 20s -> %s",
                         counter++, id, handle, topic_id, topic_name, subscriber_table[j].dest_cb_name);
             }
         }
         if (is_sub_found == false) {
-            adp_log("%02d |   0x%02d | 0x%08x | 0x%08x | % 12s |", counter++, id, handle, topic_id, topic_name);
+            adp_log("%02d |   0x%02d | 0x%08x | 0x%08x | % 20s |", counter++, id, handle, topic_id, topic_name);
         }
-        adp_log("------------------------------------------------------------------" );
+        adp_log("-------------------------------------------------------------------------" );
     }
 }
 
@@ -219,7 +219,7 @@ adp_result_t adp_topic_subscribe (uint32_t topic_target, adp_topic_cb subscriber
             return ADP_RESULT_SUCCESS;
         }
     }
-
+    adp_log_e("Subscriber '%s' NOT registered (no space left) for 0x%08x", subscriber_name, topic_target);
     return ADP_RESULT_NO_SPACE_LEFT;
 }
 
