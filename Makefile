@@ -34,7 +34,7 @@ DEPS := $(shell find ./$(SRC_DIR_NAME) -type d )
 
 
 # FLAGS
-CFLAGS  := -Wall -Wshadow -Wundef -Winit-self -Wpointer-arith 
+CFLAGS  := -Wall -Wshadow -Wundef -Winit-self -Wpointer-arith
 CFLAGS  += -Wextra -Wno-unused-parameter -Wunused-but-set-variable   -Wunused-but-set-parameter -Wundef -Warray-bounds
 CFLAGS  += -fdata-sections -ffunction-sections -O2
 LDFLAGS := -pthread -lpcap -Wl,-Map=$(BUILD_DIR_NAME)/$(APP_NAME).map,--cref -Wl,--gc-sections

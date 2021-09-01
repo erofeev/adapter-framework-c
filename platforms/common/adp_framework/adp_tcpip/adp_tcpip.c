@@ -79,7 +79,7 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
 {
     uint32_t ulIPAddress, ulNetMask, ulGatewayAddress, ulDNSServerAddress;
     char cBuffer[ 16 ];
-    uint32_t event_data[5];
+    uint32_t event_data[5] = {0};
     adp_net_tcpip_status_t adp_net_status;
 
     /* If the network has just come up...*/
@@ -99,17 +99,22 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
 
         FreeRTOS_inet_ntoa( ulDNSServerAddress, cBuffer );
         adp_log_d ( "DNS Server Address: %s", cBuffer ) ;
+
+        event_data[1] = ulIPAddress;
+        event_data[2] = ulNetMask;
+        event_data[3] = ulGatewayAddress;
+        event_data[4] = ulDNSServerAddress;
     } else {
         adp_net_status = ADP_NET_TCPIP_STACK_DOWN;
+        event_data[1] = 0;
+        event_data[2] = 0;
+        event_data[3] = 0;
+        event_data[4] = 0;
         adp_log_d("IP net is down" );
     }
 
     // Publish info
     event_data[0] = adp_net_status;
-    event_data[1] = ulIPAddress;
-    event_data[2] = ulNetMask;
-    event_data[3] = ulGatewayAddress;
-    event_data[4] = ulDNSServerAddress;
     adp_topic_publish(ADP_TOPIC_SYSTEM_NET_TCPIP_STATUS, &event_data, sizeof(event_data), ADP_TOPIC_PRIORITY_HIGH);
 }
 

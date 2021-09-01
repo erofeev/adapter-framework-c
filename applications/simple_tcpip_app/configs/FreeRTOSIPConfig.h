@@ -74,10 +74,10 @@ ipconfigUSE_DNS is set to 1 but a DNS server cannot be contacted. */
 208.67.220.220.  Used in ipconfigUSE_DNS is set to 0, or ipconfigUSE_DNS is set
 to 1 but a DNS server cannot be contacted.*/
 
-#define configDNS_SERVER_ADDR0  10
-#define configDNS_SERVER_ADDR1  4
-#define configDNS_SERVER_ADDR2  4
-#define configDNS_SERVER_ADDR3  10
+#define configDNS_SERVER_ADDR0  8
+#define configDNS_SERVER_ADDR1  8
+#define configDNS_SERVER_ADDR2  8
+#define configDNS_SERVER_ADDR3  8
 
 /* Default netmask configuration.  Used in ipconfigUSE_DNS is set to 0, or
 ipconfigUSE_DNS is set to 1 but a DNS server cannot be contacted. */

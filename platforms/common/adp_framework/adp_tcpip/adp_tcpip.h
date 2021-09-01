@@ -14,6 +14,7 @@
 typedef enum {
     ADP_NET_TCPIP_STACK_DOWN       = 0,
     ADP_NET_TCPIP_STACK_UP         = 1,
+    ADP_NET_TCPIP_STACK_NA         = 0xFF,
 } adp_net_tcpip_status_t;
 
 

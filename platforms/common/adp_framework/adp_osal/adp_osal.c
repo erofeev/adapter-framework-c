@@ -48,7 +48,8 @@ size_t xPortGetFreeHeapSize(void)
 
 void *adp_os_malloc(uint32_t size)
 {
-    return pvPortMalloc(size);
+    void *ptr = pvPortMalloc(size);
+    return ptr;
 }
 
 void adp_os_free(void* ptr)

@@ -67,17 +67,29 @@ static void stdout_callback(log_Event *ev) {
       s++;
       ms = 0;
   }
-
+    if (ev->level == LOG_INFO) {
 #ifdef LOG_USE_COLOR
-  fprintf(
-    ev->udata, "%s.%03ld %s%-5s\x1b[0m\x1b[90m[%s -> %s()] :\x1b[0m ",
-    buf, ms, level_colors[ev->level], level_strings[ev->level],
-    ev->task_name, ev->function);
+        fprintf(ev->udata,
+                "%s.%03ld %s%-5s\x1b[0m\x1b[90m[%s] :\x1b[0m ", buf, ms,
+                level_colors[ev->level], level_strings[ev->level],
+                ev->task_name);
 #else
-  fprintf(
-    ev->udata, "%s.%03ld %-5s [%s -> %s()]: ",
-    buf, ms, level_strings[ev->level], ev->task_name, ev->function);
+        fprintf(
+                ev->udata, "%s.%03ld %-5s [%s]: ",
+                buf, ms, level_strings[ev->level], ev->task_name);
 #endif
+    } else {
+#ifdef LOG_USE_COLOR
+        fprintf(ev->udata,
+                "%s.%03ld %s%-5s\x1b[0m\x1b[90m[%s -> %s()] :\x1b[0m ", buf, ms,
+                level_colors[ev->level], level_strings[ev->level],
+                ev->task_name, ev->function);
+#else
+        fprintf(
+                ev->udata, "%s.%03ld %-5s [%s -> %s()]: ",
+                buf, ms, level_strings[ev->level], ev->task_name, ev->function);
+#endif
+    }
   vfprintf(ev->udata, ev->fmt, ev->ap);
   fprintf(ev->udata, "\n");
   fflush(ev->udata);

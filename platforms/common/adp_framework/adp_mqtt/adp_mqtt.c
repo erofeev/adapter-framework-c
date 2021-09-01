@@ -7,6 +7,7 @@
 #include "stdint.h"
 #include "string.h"
 #include "core_mqtt.h"
+#include "transport_interface.h"
 
 #include "adp_osal.h"
 #include "adp_dispatcher.h"
@@ -21,11 +22,17 @@
  #define adp_log_d(...)
 #endif
 
+ struct NetworkContext
+ {
+     void* tcpSocketContext;
+     void* tlsContext;
+ };
 
-MQTTContext_t      mqttContext;
-TransportInterface_t transport;
-MQTTFixedBuffer_t  fixedBuffer;
-uint8_t            buffer[ADP_MQTT_BUFFER_SIZE];
+typedef struct adp_mqtt_session {
+     MQTTContext_t             context;
+     MQTTConnectInfo_t         connect_info;
+} adp_mqtt_session_t ;
+
 
 
 uint32_t mqtt_getTimeStampMs()
@@ -42,33 +49,52 @@ void mqtt_eventCallback(MQTTContext_t pContext, MQTTPacketInfo_t pPacketInfo, MQ
 }
 
 
-adp_result_t mqtt_do_init(adp_mqtt_status_t *result, adp_mqtt_cmd_t* init_data)
+int32_t mqtt_network_send( NetworkContext_t pContext, const void* pBuffer, size_t bytes )
 {
-    /*
-        // Network send.
-        int32_t networkSend( NetworkContext_t pContext, const void pBuffer, size_t bytes );
-        // Network receive.
-        int32_t networkRecv( NetworkContext_t pContext, void pBuffer, size_t bytes );
-    */
+    adp_log_d("Not implemented");
+    return 0;
+}
 
-    // Clear context.
-    memset((void*)&mqttContext, 0x00, sizeof(MQTTContext_t));
 
-    // Set transport interface members.
-//    transport.pNetworkContext = &someTransportContext;
-//    transport.send = networkSend;
-//    transport.recv = networkRecv;
+int32_t mqtt_network_recv( NetworkContext_t pContext, void* pBuffer, size_t bytes )
+{
+    adp_log_d("Not implemented");
+    return 0;
+}
 
-    // Set buffer members.
-    fixedBuffer.pBuffer = buffer;
-    fixedBuffer.size    = ADP_MQTT_BUFFER_SIZE;
+adp_result_t mqtt_do_init(adp_mqtt_status_t *result, adp_mqtt_cmd_t* cmd_data)
+{
+    adp_mqtt_session_t *session;
 
-    MQTTStatus_t core_mqtt_status = MQTT_Init(&mqttContext, &transport, mqtt_getTimeStampMs, (MQTTEventCallback_t)mqtt_eventCallback, &fixedBuffer);
-    result->subcode = core_mqtt_status;
+    session = adp_os_malloc(sizeof(adp_mqtt_session_t)); // FIXME remember to free memory in deinit TODO
+    ADP_ASSERT(session, "Unable to allocate memory for MQTT session");
+    memset((void*)session, 0x00, sizeof(adp_mqtt_session_t));
+
+    // Set transport buffer
+    MQTTFixedBuffer_t         data_buffer;
+    data_buffer.pBuffer = adp_os_malloc(ADP_MQTT_BUFFER_SIZE);
+    data_buffer.size    = ADP_MQTT_BUFFER_SIZE;
+    ADP_ASSERT(session, "Unable to allocate memory for MQTT rx/tx buffer");
+
+    // Set transport interface members
+    TransportInterface_t      transport_if;
+ //   transport.pNetworkContext = &mqttContext; FIXME Something we will need to put here...
+    transport_if.send = (TransportSend_t)mqtt_network_send;
+    transport_if.recv = (TransportRecv_t)mqtt_network_recv;
+
+    MQTTStatus_t core_mqtt_status = MQTT_Init(&session->context,
+                                              &transport_if,
+                                              mqtt_getTimeStampMs,
+                                              (MQTTEventCallback_t)mqtt_eventCallback,
+                                              &data_buffer);
+    result->subcode    = core_mqtt_status;
+    result->session_id = (void*)session;
 
     if( core_mqtt_status != MQTTSuccess ) {
         result->status = ADP_RESULT_FAILED;
         adp_log_e("MQTT init result is %d", core_mqtt_status);
+        adp_os_free(data_buffer.pBuffer);
+        adp_os_free(session);
         return ADP_RESULT_FAILED;
     }
 
@@ -78,19 +104,73 @@ adp_result_t mqtt_do_init(adp_mqtt_status_t *result, adp_mqtt_cmd_t* init_data)
 }
 
 
+adp_result_t mqtt_do_connect(adp_mqtt_status_t *result, adp_mqtt_cmd_t* cmd_data)
+{
+    bool sessionPresent;
+    adp_mqtt_cmd_connect_t *connect = (adp_mqtt_cmd_connect_t*)&cmd_data->connect;
+    adp_mqtt_session_t *session = (adp_mqtt_session_t*)connect->session_id;
+
+    if (!connect->client_id) {
+        result->status = ADP_RESULT_INVALID_PARAMETER;
+        return result->status;
+    }
+    if (connect->password) {
+        session->connect_info.passwordLength     = strlen(connect->password);
+    }
+    if (connect->username) {
+        session->connect_info.userNameLength     = strlen(connect->username);
+    }
+    session->connect_info.cleanSession           = connect->clean_session;
+    session->connect_info.keepAliveSeconds       = connect->keep_alive_seconds;
+    session->connect_info.pClientIdentifier      = connect-> client_id;
+    session->connect_info.clientIdentifierLength = strlen(connect-> client_id); // FIXME should be memcpy
+    session->connect_info.pPassword              = connect->password;
+    session->connect_info.pUserName              = connect->username;
+
+
+    MQTTStatus_t core_mqtt_status = MQTT_Connect(&session->context,
+                                                 &session->connect_info,
+                                                 NULL, /* No LWT TODO FIXME */
+                                                 100  /* CONNACK_RECV_TIMEOUT_MS */,
+                                                 &sessionPresent);
+    result->session_id = session;
+    result->subcode    = core_mqtt_status;
+
+    if( core_mqtt_status != MQTTSuccess ) {
+        adp_log_e("MQTT connect result is %d", core_mqtt_status);
+        result->status = ADP_RESULT_FAILED;
+    } else {
+        result->status = ADP_RESULT_SUCCESS;
+    }
+
+    return result->status;
+}
+
+
 int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 {
     adp_mqtt_cmd_t    *topic = (adp_mqtt_cmd_t*)data;
     adp_mqtt_status_t  result;
 
-    adp_log_d("MQTT got cmd#%d to be processed", topic->command);
-
-    if (topic->command == ADP_MQTT_DO_INIT) {
-        mqtt_do_init(&result, topic);
-    } else {
+    switch (topic->command) {
+    case ADP_MQTT_DO_INIT:
+        {
+            adp_log_d("MQTT ADP_MQTT_DO_INIT");
+            mqtt_do_init(&result, (adp_mqtt_cmd_t*)data);
+        }
+        break;
+    case ADP_MQTT_DO_CONNECT:
+        {
+            adp_log_d("MQTT ADP_MQTT_DO_CONNECT");
+            mqtt_do_connect(&result, (adp_mqtt_cmd_t*)data);
+        }
+        break;
+    default:
         adp_log_e("Unknown MQTT cmd #%d", topic->command);
-        return ADP_RESULT_FAILED;
+        result.status = ADP_RESULT_INVALID_PARAMETER;
+        break;
     }
+
 
     // Notify users on status change
     result.command = topic->command;

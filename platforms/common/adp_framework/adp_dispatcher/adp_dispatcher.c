@@ -227,7 +227,7 @@ adp_result_t adp_topic_subscribe (uint32_t topic_target, adp_topic_cb subscriber
 int dispatcher_add(adp_dispatcher_handle_t handle, int id)
 {
     int i = 0;
-    while ((dispatcher_table[i].handle != NULL) && (i < ADP_DISPATCHER_TABLE_SIZE)) {
+    while ( (i < ADP_DISPATCHER_TABLE_SIZE) && (dispatcher_table[i].handle != NULL) ) {
         i++;
     }
     if (i == ADP_DISPATCHER_TABLE_SIZE) {
