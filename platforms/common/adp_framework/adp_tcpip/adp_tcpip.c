@@ -80,12 +80,12 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
     uint32_t ulIPAddress, ulNetMask, ulGatewayAddress, ulDNSServerAddress;
     char cBuffer[ 16 ];
     uint32_t event_data[5] = {0};
-    adp_net_tcpip_status_t adp_net_status;
+    adp_ipnet_status_t adp_net_status;
 
     /* If the network has just come up...*/
     if( eNetworkEvent == eNetworkUp )
     {
-        adp_net_status = ADP_NET_TCPIP_STACK_UP;
+        adp_net_status = ADP_IPNET_STACK_UP;
         adp_log_d("IP net is up");
         FreeRTOS_GetAddressConfiguration( &ulIPAddress, &ulNetMask, &ulGatewayAddress, &ulDNSServerAddress );
         FreeRTOS_inet_ntoa( ulIPAddress, cBuffer);
@@ -105,7 +105,7 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
         event_data[3] = ulGatewayAddress;
         event_data[4] = ulDNSServerAddress;
     } else {
-        adp_net_status = ADP_NET_TCPIP_STACK_DOWN;
+        adp_net_status = ADP_IPNET_STACK_DOWN;
         event_data[1] = 0;
         event_data[2] = 0;
         event_data[3] = 0;
@@ -119,24 +119,37 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
 }
 
 
-int tcpip_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
+int ipnet_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 {
+    adp_ipnet_cmd_t *cmd = (adp_ipnet_cmd_t*)data;
+
+    switch (cmd->command) {
+    case ADP_IPNET_DO_TCP_CONNECT:
+        {
+            adp_log_d("IPNET - DO_TCP_CONNECT");
+          // FIXME continue:  ipnet_do_init(&result, (adp_mqtt_cmd_t*)data);
+        }
+        break;
+    default:
+        adp_log_e("Unknown IPNET cmd #%d", cmd->command);
+     // TODO    result.status = ADP_RESULT_INVALID_PARAMETER;
+        break;
+    }
+
     return ADP_RESULT_SUCCESS;
 }
 
 
-adp_result_t adp_tcpip_initialize(adp_dispatcher_handle_t dispatcher)
+adp_result_t adp_ipnet_initialize(adp_dispatcher_handle_t dispatcher)
 {
     // Register topics
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_IPSTATUS, "IPNET.Status");
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_EXECUTE_CMD, "IPNET.ExecuteCmd");
-    adp_topic_subscribe(ADP_TOPIC_IPNET_EXECUTE_CMD, &tcpip_cmd_handler, "ADP.IPNET.SVC.Executor");
+    adp_topic_subscribe(ADP_TOPIC_IPNET_EXECUTE_CMD, &ipnet_cmd_handler, "ADP.IPNET.SVC.Executor");
 
     /*
-     ***NOTE*** Tasks that use the network are created in the network event hook
-     * when the network is connected and ready for use (see the definition of
-     * vApplicationIPNetworkEventHook() below).  The address values passed in here
-     * are used if ipconfigUSE_DHCP is set to 0, or if ipconfigUSE_DHCP is set to 1
+     * The address values passed in here are used if ipconfigUSE_DHCP
+     * is set to 0, or if ipconfigUSE_DHCP is set to 1
      * but a DHCP server cannot be  contacted. */
     BaseType_t result = FreeRTOS_IPInit(adp_net_self_ip_addr, adp_net_ip_mask,
             adp_net_gw_ip_addr, adp_net_dns_addr, adp_net_mac_addr);

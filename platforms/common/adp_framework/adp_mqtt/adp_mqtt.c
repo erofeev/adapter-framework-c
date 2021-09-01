@@ -149,31 +149,31 @@ adp_result_t mqtt_do_connect(adp_mqtt_status_t *result, adp_mqtt_cmd_t* cmd_data
 
 int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 {
-    adp_mqtt_cmd_t    *topic = (adp_mqtt_cmd_t*)data;
+    adp_mqtt_cmd_t    *cmd = (adp_mqtt_cmd_t*)data;
     adp_mqtt_status_t  result;
 
-    switch (topic->command) {
+    switch (cmd->command) {
     case ADP_MQTT_DO_INIT:
         {
-            adp_log_d("MQTT ADP_MQTT_DO_INIT");
+            adp_log_d("MQTT - DO_INIT");
             mqtt_do_init(&result, (adp_mqtt_cmd_t*)data);
         }
         break;
     case ADP_MQTT_DO_CONNECT:
         {
-            adp_log_d("MQTT ADP_MQTT_DO_CONNECT");
+            adp_log_d("MQTT - DO_CONNECT");
             mqtt_do_connect(&result, (adp_mqtt_cmd_t*)data);
         }
         break;
     default:
-        adp_log_e("Unknown MQTT cmd #%d", topic->command);
+        adp_log_e("Unknown MQTT cmd #%d", cmd->command);
         result.status = ADP_RESULT_INVALID_PARAMETER;
         break;
     }
 
 
     // Notify users on status change
-    result.command = topic->command;
+    result.command = cmd->command;
     adp_topic_publish(ADP_TOPIC_MQTT_STATUS, &result, sizeof(adp_mqtt_status_t), ADP_TOPIC_PRIORITY_HIGH);
 
     return ADP_RESULT_SUCCESS;

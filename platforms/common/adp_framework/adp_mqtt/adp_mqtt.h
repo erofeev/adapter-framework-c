@@ -19,7 +19,7 @@ typedef enum {
     ADP_MQTT_DO_DISCONNECT   = 0x00000005,
 } adp_mqtt_command_code_t;
 
-// The content of ADP_TOPIC_SYSTEM_MQTT_STATUS
+// The content of ADP_TOPIC_MQTT_STATUS
 typedef struct {
     adp_mqtt_command_code_t     command;
     uint32_t                     status;
@@ -27,7 +27,7 @@ typedef struct {
     void                    *session_id;
 } adp_mqtt_status_t;
 
-// The content of ADP_TOPIC_SYSTEM_MQTT_EXECUTE_CMD - CONNECT
+// The content of ADP_TOPIC_MQTT_EXECUTE_CMD - ADP_MQTT_DO_CONNECT
 typedef struct {
     void                    *session_id;
     uint16_t              clean_session;
@@ -37,7 +37,7 @@ typedef struct {
     const char                *password;
 } adp_mqtt_cmd_connect_t;
 
-// The content of ADP_TOPIC_SYSTEM_MQTT_EXECUTE_CMD
+// The content of ADP_TOPIC_MQTT_EXECUTE_CMD
 typedef struct {
     adp_mqtt_command_code_t     command;
     union {

@@ -15,24 +15,30 @@
 
 int app_net_status_handler(uint32_t topic_id, void* data, uint32_t len)
 {
-    static adp_net_tcpip_status_t prev_status = ADP_NET_TCPIP_STACK_NA;
-    adp_net_tcpip_status_t status = *(adp_net_tcpip_status_t*)data;
+    static adp_ipnet_status_t prev_status = ADP_IPNET_STACK_NA;
+    adp_ipnet_status_t status = *(adp_ipnet_status_t*)data;
 
     if (status == prev_status) {
         return ADP_RESULT_SUCCESS;
     }
-    adp_log("Status: Network is %s", (status == ADP_NET_TCPIP_STACK_DOWN) ? "down" : "up");
+    adp_log("Status: Network is %s", (status == ADP_IPNET_STACK_DOWN) ? "down" : "up");
 
     switch (status) {
-    case ADP_NET_TCPIP_STACK_UP:
+    case ADP_IPNET_STACK_UP:
         {
             adp_mqtt_cmd_t mqtt_init = { .command = ADP_MQTT_DO_INIT };
-            adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_init, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
+           // adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_init, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
+
+
+            /// REMOVE ME
+            adp_ipnet_cmd_t ipnet_connect = { .command = ADP_IPNET_DO_TCP_CONNECT };
+            adp_topic_publish(ADP_TOPIC_IPNET_EXECUTE_CMD, &ipnet_connect, sizeof(adp_ipnet_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
+            ///
         }
         break;
-    case ADP_NET_TCPIP_STACK_DOWN:
+    case ADP_IPNET_STACK_DOWN:
         {
-            adp_log("IP stack is down");
+            // Nothing so far
         }
         break;
     default:
