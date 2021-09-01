@@ -27,7 +27,7 @@ int app_net_status_handler(uint32_t topic_id, void* data, uint32_t len)
     case ADP_NET_TCPIP_STACK_UP:
         {
             adp_mqtt_cmd_t mqtt_init = { .command = ADP_MQTT_DO_INIT };
-            adp_topic_publish(ADP_TOPIC_SYSTEM_MQTT_EXECUTE_CMD, &mqtt_init, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
+            adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_init, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
         }
         break;
     case ADP_NET_TCPIP_STACK_DOWN:
@@ -53,7 +53,7 @@ int app_mqtt_status_handler(uint32_t topic_id, void* data, uint32_t len)
             mqtt_status->subcode,
             mqtt_status->session_id);
 
-    // Init is done, try to connect to the broker
+    // MQTT init is done, try to connect to the broker
     if ( (mqtt_status->command == ADP_MQTT_DO_INIT) && (mqtt_status->status == ADP_RESULT_SUCCESS) ) {
         // Connect to the broker
         adp_mqtt_cmd_t mqtt_connect = {
@@ -65,9 +65,9 @@ int app_mqtt_status_handler(uint32_t topic_id, void* data, uint32_t len)
                 .connect.username                = "USERNAME",
                 .connect.password                = "PASSWORD",
         };
-        adp_topic_publish(ADP_TOPIC_SYSTEM_MQTT_EXECUTE_CMD, &mqtt_connect, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
+        adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_connect, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
     } else {
-        // TODO
+        // Nothing to do
     }
 
     return ADP_RESULT_SUCCESS;

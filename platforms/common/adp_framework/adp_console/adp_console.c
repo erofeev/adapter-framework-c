@@ -50,7 +50,7 @@ int console_handler(uint32_t topic_id, void* data, uint32_t len)
                 if (cmd_idx) {
                     cmd_line[cmd_idx] = 0x00;
                     adp_log_d("CLI cmd[] argc = %d", cmd_line, *argc);
-                    adp_topic_publish(ADP_TOPIC_SYSTEM_CLI_EXECUTE_CMD, buffer, cmd_idx + 1 /* NUll */ + 1 /* argc */, ADP_TOPIC_PRIORITY_NORMAL);
+                    adp_topic_publish(ADP_TOPIC_CLI_EXECUTE_CMD, buffer, cmd_idx + 1 /* NUll */ + 1 /* argc */, ADP_TOPIC_PRIORITY_NORMAL);
                 }
 
                 // Reset cmd line
@@ -117,15 +117,15 @@ void adp_console_task(void* params)
 
     // Connect the topic to the dispatcher
     if (dispatcher) {
-        adp_topic_register(dispatcher, ADP_TOPIC_SYSTEM_CLI_INPUT_STREAM, "CLI.InputStream");
-        adp_topic_register(dispatcher, ADP_TOPIC_SYSTEM_CLI_EXECUTE_CMD , "CLI.ExecuteCmd");
+        adp_topic_register(dispatcher, ADP_TOPIC_CLI_INPUT_STREAM, "CLI.InputStream");
+        adp_topic_register(dispatcher, ADP_TOPIC_CLI_EXECUTE_CMD , "CLI.ExecuteCmd");
     }
-    adp_topic_subscribe(ADP_TOPIC_SYSTEM_CLI_INPUT_STREAM, &console_handler, "CLI.StreamHandler");
+    adp_topic_subscribe(ADP_TOPIC_CLI_INPUT_STREAM, &console_handler, "CLI.StreamHandler");
 
     while (1) {
         char c __attribute__ ((aligned (sizeof(void*)))) = adp_uart_getchar();
         if (c > 0) {
-            adp_topic_publish(ADP_TOPIC_SYSTEM_CLI_INPUT_STREAM, &c, sizeof(c), ADP_TOPIC_PRIORITY_NORMAL);
+            adp_topic_publish(ADP_TOPIC_CLI_INPUT_STREAM, &c, sizeof(c), ADP_TOPIC_PRIORITY_NORMAL);
         }
     }
 }

@@ -115,14 +115,14 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
 
     // Publish info
     event_data[0] = adp_net_status;
-    adp_topic_publish(ADP_TOPIC_SYSTEM_NET_TCPIP_STATUS, &event_data, sizeof(event_data), ADP_TOPIC_PRIORITY_HIGH);
+    adp_topic_publish(ADP_TOPIC_NET_TCPIP_STATUS, &event_data, sizeof(event_data), ADP_TOPIC_PRIORITY_HIGH);
 }
 
 
 adp_result_t adp_tcpip_initialize(adp_dispatcher_handle_t dispatcher)
 {
     // Register topics
-    adp_topic_register(dispatcher, ADP_TOPIC_SYSTEM_NET_TCPIP_STATUS, "NET.Status");
+    adp_topic_register(dispatcher, ADP_TOPIC_NET_TCPIP_STATUS, "NET.Status");
 
     /*
      ***NOTE*** Tasks that use the network are created in the network event hook

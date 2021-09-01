@@ -45,7 +45,7 @@ void mqtt_eventCallback(MQTTContext_t pContext, MQTTPacketInfo_t pPacketInfo, MQ
 {
     // Notify about event
     adp_log_e("TODO not implemented yet");
-    adp_topic_publish(ADP_TOPIC_SYSTEM_MQTT_STATUS, NULL, 0, ADP_TOPIC_PRIORITY_HIGH);
+    adp_topic_publish(ADP_TOPIC_MQTT_STATUS, NULL, 0, ADP_TOPIC_PRIORITY_HIGH);
 }
 
 
@@ -174,7 +174,7 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 
     // Notify users on status change
     result.command = topic->command;
-    adp_topic_publish(ADP_TOPIC_SYSTEM_MQTT_STATUS, &result, sizeof(adp_mqtt_status_t), ADP_TOPIC_PRIORITY_HIGH);
+    adp_topic_publish(ADP_TOPIC_MQTT_STATUS, &result, sizeof(adp_mqtt_status_t), ADP_TOPIC_PRIORITY_HIGH);
 
     return ADP_RESULT_SUCCESS;
 }
@@ -183,11 +183,11 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 adp_result_t adp_mqtt_initialize(adp_dispatcher_handle_t dispatcher)
 {
     // Register topics
-    adp_topic_register(dispatcher, ADP_TOPIC_SYSTEM_MQTT_STATUS,      "MQTT.Status");
-    adp_topic_register(dispatcher, ADP_TOPIC_SYSTEM_MQTT_EXECUTE_CMD, "MQTT.ExecuteCmd");
+    adp_topic_register(dispatcher, ADP_TOPIC_MQTT_STATUS,      "MQTT.Status");
+    adp_topic_register(dispatcher, ADP_TOPIC_MQTT_EXECUTE_CMD, "MQTT.ExecuteCmd");
 
     // Subscribe for commands
-    adp_topic_subscribe(ADP_TOPIC_SYSTEM_MQTT_EXECUTE_CMD, &mqtt_cmd_handler, "MQTT.Executor");
+    adp_topic_subscribe(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_cmd_handler, "MQTT.Executor");
 
     return ADP_RESULT_SUCCESS;
 }
