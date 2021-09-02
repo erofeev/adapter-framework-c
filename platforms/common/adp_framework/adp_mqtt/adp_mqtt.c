@@ -44,7 +44,7 @@ void mqtt_eventCallback(MQTTContext_t pContext, MQTTPacketInfo_t pPacketInfo, MQ
 {
     // Notify about event
     adp_log_e("TODO not implemented yet");
-    adp_topic_publish(ADP_TOPIC_MQTT_STATUS, NULL, 0, ADP_TOPIC_PRIORITY_HIGH);
+    // TODO adp_topic_publish(ADP_TOPIC_MQTT_CMD_STATUS, NULL, 0, ADP_TOPIC_PRIORITY_HIGH);
 }
 
 
@@ -61,7 +61,7 @@ int32_t mqtt_network_recv( NetworkContext_t pContext, void* pBuffer, size_t byte
     return 0;
 }
 
-adp_result_t mqtt_do_init(adp_mqtt_status_t *result, adp_mqtt_cmd_t* cmd_data)
+adp_result_t mqtt_do_init(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_t* cmd_data)
 {
     adp_mqtt_session_t *session;
 
@@ -104,11 +104,11 @@ adp_result_t mqtt_do_init(adp_mqtt_status_t *result, adp_mqtt_cmd_t* cmd_data)
 }
 
 
-adp_result_t mqtt_do_connect(adp_mqtt_status_t *result, adp_mqtt_cmd_t* cmd_data)
+adp_result_t mqtt_do_connect(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_t* cmd_data)
 {
     bool sessionPresent;
     adp_mqtt_cmd_connect_t *connect = (adp_mqtt_cmd_connect_t*)&cmd_data->connect;
-    adp_mqtt_session_t *session = (adp_mqtt_session_t*)connect->session_id;
+    adp_mqtt_session_t     *session = (adp_mqtt_session_t*)connect->session_id;
 
     if (!connect->client_id) {
         result->status = ADP_RESULT_INVALID_PARAMETER;
@@ -123,10 +123,9 @@ adp_result_t mqtt_do_connect(adp_mqtt_status_t *result, adp_mqtt_cmd_t* cmd_data
     session->connect_info.cleanSession           = connect->clean_session;
     session->connect_info.keepAliveSeconds       = connect->keep_alive_seconds;
     session->connect_info.pClientIdentifier      = connect-> client_id;
-    session->connect_info.clientIdentifierLength = strlen(connect-> client_id); // FIXME should be memcpy
+    session->connect_info.clientIdentifierLength = strlen(connect-> client_id);
     session->connect_info.pPassword              = connect->password;
     session->connect_info.pUserName              = connect->username;
-
 
     MQTTStatus_t core_mqtt_status = MQTT_Connect(&session->context,
                                                  &session->connect_info,
@@ -150,7 +149,9 @@ adp_result_t mqtt_do_connect(adp_mqtt_status_t *result, adp_mqtt_cmd_t* cmd_data
 int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 {
     adp_mqtt_cmd_t    *cmd = (adp_mqtt_cmd_t*)data;
-    adp_mqtt_status_t  result;
+    adp_mqtt_cmd_status_t  result;
+
+    result.command = cmd->command;
 
     switch (cmd->command) {
     case ADP_MQTT_DO_INIT:
@@ -171,10 +172,8 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
         break;
     }
 
-
     // Notify users on status change
-    result.command = cmd->command;
-    adp_topic_publish(ADP_TOPIC_MQTT_STATUS, &result, sizeof(adp_mqtt_status_t), ADP_TOPIC_PRIORITY_HIGH);
+    adp_topic_publish(ADP_TOPIC_MQTT_CMD_STATUS, &result, sizeof(adp_mqtt_cmd_status_t), ADP_TOPIC_PRIORITY_HIGH);
 
     return ADP_RESULT_SUCCESS;
 }
@@ -183,7 +182,7 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 adp_result_t adp_mqtt_initialize(adp_dispatcher_handle_t dispatcher)
 {
     // Register topics
-    adp_topic_register(dispatcher, ADP_TOPIC_MQTT_STATUS,      "MQTT.Status");
+    adp_topic_register(dispatcher, ADP_TOPIC_MQTT_CMD_STATUS,  "MQTT.CmdStatus");
     adp_topic_register(dispatcher, ADP_TOPIC_MQTT_EXECUTE_CMD, "MQTT.ExecuteCmd");
 
     // Subscribe for commands

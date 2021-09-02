@@ -31,7 +31,9 @@ int app_net_status_handler(uint32_t topic_id, void* data, uint32_t len)
 
 
             /// REMOVE ME
-            adp_ipnet_cmd_t ipnet_connect = { .command = ADP_IPNET_DO_TCP_CONNECT };
+            adp_ipnet_cmd_t ipnet_connect = { .command = ADP_IPNET_DO_TCP_CONNECT,
+                       .connect.port      = 1883,
+                       .connect.hostname = "test.mosquitto.org" } ;
             adp_topic_publish(ADP_TOPIC_IPNET_EXECUTE_CMD, &ipnet_connect, sizeof(adp_ipnet_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
             ///
         }
@@ -50,21 +52,34 @@ int app_net_status_handler(uint32_t topic_id, void* data, uint32_t len)
 }
 
 
-int app_mqtt_status_handler(uint32_t topic_id, void* data, uint32_t len)
+int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
 {
-    adp_mqtt_status_t *mqtt_status = (adp_mqtt_status_t*)data;
+    adp_ipnet_cmd_status_t *cmd_status = (adp_ipnet_cmd_status_t*)data;
+    adp_log("Status: IPNET cmd #%d executed with result %s subcode: %d  socket id is 0x%x",
+            cmd_status->command,
+            (cmd_status->status == ADP_RESULT_SUCCESS) ? "SUCESS" : "FAILED",
+            cmd_status->subcode,
+            cmd_status->socket_id);
+
+    return ADP_RESULT_SUCCESS;
+}
+
+
+int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
+{
+    adp_mqtt_cmd_status_t *cmd_status = (adp_mqtt_cmd_status_t*)data;
     adp_log("Status: MQTT cmd #%d executed with result %s subcode: %d  session id is 0x%x",
-            mqtt_status->command,
-            (mqtt_status->status == ADP_RESULT_SUCCESS) ? "SUCESS" : "FAILED",
-            mqtt_status->subcode,
-            mqtt_status->session_id);
+            cmd_status->command,
+            (cmd_status->status == ADP_RESULT_SUCCESS) ? "SUCESS" : "FAILED",
+            cmd_status->subcode,
+            cmd_status->session_id);
 
     // MQTT init is done, try to connect to the broker
-    if ( (mqtt_status->command == ADP_MQTT_DO_INIT) && (mqtt_status->status == ADP_RESULT_SUCCESS) ) {
+    if ( (cmd_status->command == ADP_MQTT_DO_INIT) && (cmd_status->status == ADP_RESULT_SUCCESS) ) {
         // Connect to the broker
         adp_mqtt_cmd_t mqtt_connect = {
                 .command                         = ADP_MQTT_DO_CONNECT,
-                .connect.session_id              = mqtt_status->session_id,
+                .connect.session_id              = cmd_status->session_id,
                 .connect.clean_session           = 1,
                 .connect.keep_alive_seconds      = 60,
                 .connect.client_id               = "CLIENT_ID",

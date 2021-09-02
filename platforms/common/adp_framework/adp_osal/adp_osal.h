@@ -40,6 +40,8 @@ uint32_t adp_os_uptime(void);
 
 uint32_t adp_os_uptime_ms(void);
 
+uint32_t adp_os_rand(void);
+
 void adp_os_sleep(uint32_t time_ms);
 
 

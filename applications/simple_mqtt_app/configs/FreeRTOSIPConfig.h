@@ -141,9 +141,9 @@ socket has been destroyed, the result will be stored into the cache.  The next
 call to FreeRTOS_gethostbyname() will return immediately, without even creating
 a socket. */
 #define ipconfigUSE_DNS_CACHE               ( 1 )
-#define ipconfigDNS_CACHE_NAME_LENGTH       ( 16 )
+#define ipconfigDNS_CACHE_NAME_LENGTH       ( 32 )
 #define ipconfigDNS_CACHE_ENTRIES           ( 4 )
-#define ipconfigDNS_REQUEST_ATTEMPTS        ( 2 )
+#define ipconfigDNS_REQUEST_ATTEMPTS        ( 5 )
 
 /* The IP stack executes it its own task (although any application task can make
 use of its services through the published sockets API). ipconfigUDP_TASK_PRIORITY
@@ -168,7 +168,7 @@ things such as a DHCP transaction number or initial sequence number.  Random
 number generation is performed via this macro to allow applications to use their
 own random number generation method.  For example, it might be possible to
 generate a random number by sampling noise on an analogue input. */
-#define ipconfigRAND32()    rand()
+#define ipconfigRAND32()    ulApplicationGetNextSequenceNumber(0,0,0,0)
 
 /* If ipconfigUSE_NETWORK_EVENT_HOOK is set to 1 then FreeRTOS+TCP will call the
 network event hook at the appropriate times.  If ipconfigUSE_NETWORK_EVENT_HOOK

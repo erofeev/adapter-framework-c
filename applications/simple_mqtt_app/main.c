@@ -48,12 +48,13 @@ int main(void) {
     // Run TCP/IP stack
     adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create(3, 5);
     adp_ipnet_initialize(network_dispatcher);
-    adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS, &app_net_status_handler, "App NET handler");
+    adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS,   &app_net_status_handler,     "App NET handler");
+    adp_topic_subscribe(ADP_TOPIC_IPNET_CMD_STATUS, &app_net_cmd_status_handler, "App NET CMD Status handler");
 
     // Run MQTT client
     adp_dispatcher_handle_t mqtt_dispatcher = adp_dispatcher_create(3, 25);
     adp_mqtt_initialize(mqtt_dispatcher);
-    adp_topic_subscribe(ADP_TOPIC_MQTT_STATUS, &app_mqtt_status_handler, "App MQTT handler");
+    adp_topic_subscribe(ADP_TOPIC_MQTT_CMD_STATUS, &app_mqtt_cmd_status_handler, "App MQTT handler");
 
     adp_os_start();
 

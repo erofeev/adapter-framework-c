@@ -48,6 +48,7 @@ adp_subscriber_t subscriber_table[ADP_SUBSCRIBER_TABLE_SIZE] = {0};
 ADP_WEAK
 void adp_dispatcher_cycle(bool busy, adp_os_queue_handle_t queue)
 {
+    adp_os_sleep(10);
     // TBD
 }
 

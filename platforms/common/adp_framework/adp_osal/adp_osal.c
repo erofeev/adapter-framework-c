@@ -35,7 +35,7 @@ void vApplicationDaemonTaskStartupHook( void )
 ADP_WEAK
 BaseType_t xApplicationGetRandomNumber( uint32_t * pulNumber )
 {
-    *( pulNumber ) = rand();
+    *( pulNumber ) = adp_os_rand();
     return pdTRUE;
 }
 
@@ -44,6 +44,14 @@ size_t xPortGetFreeHeapSize(void)
 {
     adp_log("%s not supported", __FUNCTION__);
     return ADP_RESULT_FAILED;
+}
+
+uint32_t adp_os_rand()
+{
+    static int i = 0;
+    if (!i) { srand(time(NULL)); i = 1; }
+    uint32_t r = rand();
+    return r;
 }
 
 void *adp_os_malloc(uint32_t size)

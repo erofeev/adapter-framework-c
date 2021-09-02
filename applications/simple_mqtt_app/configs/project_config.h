@@ -34,8 +34,9 @@ enum app_topics_enum {
     ADP_TOPIC_CLI_EXECUTE_CMD                       = 0x00000002,
     ADP_TOPIC_IPNET_IPSTATUS                        = 0x00000010,
     ADP_TOPIC_IPNET_EXECUTE_CMD                     = 0x00000011,
-    ADP_TOPIC_MQTT_STATUS                           = 0x00000020,
-    ADP_TOPIC_MQTT_EXECUTE_CMD                      = 0x00000021,
+    ADP_TOPIC_IPNET_CMD_STATUS                      = 0x00000012,
+    ADP_TOPIC_MQTT_EXECUTE_CMD                      = 0x00000020,
+    ADP_TOPIC_MQTT_CMD_STATUS                       = 0x00000021,
 };
 
 

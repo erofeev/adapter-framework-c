@@ -8,6 +8,7 @@
 
 #include "FreeRTOS_IP.h"
 #include "FreeRTOS_IP_Private.h"
+#include "FreeRTOS_Sockets.h"
 
 #include "adp_osal.h"
 #include "adp_logging.h"
@@ -50,7 +51,7 @@ uint32_t ulApplicationGetNextSequenceNumber( uint32_t ulSourceAddress,
     UNUSED_VAR(usSourcePort);
     UNUSED_VAR(ulDestinationAddress);
     UNUSED_VAR(usDestinationPort);
-    return rand();
+    return adp_os_rand();
 }
 
 
@@ -118,23 +119,84 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
     adp_topic_publish(ADP_TOPIC_IPNET_IPSTATUS, &event_data, sizeof(event_data), ADP_TOPIC_PRIORITY_HIGH);
 }
 
+adp_result_t ipnet_socket_create()
+{
+
+
+    return ADP_RESULT_FAILED;
+}
+
+
+adp_result_t ipnet_do_tcp_connect(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_t* cmd_data)
+{
+    Socket_t xSocket;
+    adp_ipnet_cmd_connect_t *connect = (adp_ipnet_cmd_connect_t*)&cmd_data->connect;
+
+    /* Create a TCP socket. */
+    xSocket = FreeRTOS_socket(FREERTOS_AF_INET, FREERTOS_SOCK_STREAM, FREERTOS_IPPROTO_TCP);
+
+    if( xSocket == FREERTOS_INVALID_SOCKET )
+    {
+        // Failed to create socket
+        result->status     = ADP_RESULT_NO_SPACE_LEFT;
+        return ADP_RESULT_NO_SPACE_LEFT;
+    }
+
+    struct freertos_sockaddr xRemoteAddress;
+    uint32_t ipaddr = 0;
+    char addr_str[16];
+    char *hostname = "";
+    if (connect->hostname) {
+        hostname = connect->hostname;
+        adp_log_d("DNS search for %s", hostname);
+        ipaddr = FreeRTOS_gethostbyname(hostname);
+    } else {
+        ipaddr = FreeRTOS_inet_addr_quick(connect->ip_octet1, connect->ip_octet2, connect->ip_octet3, connect->ip_octet4);
+    }
+    FreeRTOS_inet_ntoa(ipaddr, addr_str);
+    adp_log_d("Trying to connect to %s:%d [%s]", addr_str, connect->port, hostname);
+    xRemoteAddress.sin_addr = ipaddr;
+    xRemoteAddress.sin_port = FreeRTOS_htons(connect->port);
+
+    BaseType_t status = FreeRTOS_connect(xSocket, &xRemoteAddress, sizeof(xRemoteAddress));
+    if (status != pdFREERTOS_ERRNO_NONE) {
+        // Failed to connect to the server
+        result->status  = ADP_RESULT_FAILED;
+        result->subcode = status;
+        FreeRTOS_closesocket(xSocket);
+        return ADP_RESULT_FAILED;
+    }
+
+    result->status     = ADP_RESULT_SUCCESS;
+    result->socket_id = xSocket;
+
+    return ADP_RESULT_SUCCESS;
+}
 
 int ipnet_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 {
     adp_ipnet_cmd_t *cmd = (adp_ipnet_cmd_t*)data;
+    adp_ipnet_cmd_status_t result;
+
+    memset(&result, 0x00, sizeof(adp_ipnet_cmd_status_t));
+
+    result.command = cmd->command;
 
     switch (cmd->command) {
     case ADP_IPNET_DO_TCP_CONNECT:
         {
             adp_log_d("IPNET - DO_TCP_CONNECT");
-          // FIXME continue:  ipnet_do_init(&result, (adp_mqtt_cmd_t*)data);
+            ipnet_do_tcp_connect(&result, (adp_ipnet_cmd_t*)data);
         }
         break;
     default:
         adp_log_e("Unknown IPNET cmd #%d", cmd->command);
-     // TODO    result.status = ADP_RESULT_INVALID_PARAMETER;
+        result.status = ADP_RESULT_INVALID_PARAMETER;
         break;
     }
+
+    // Notify users on status change
+    adp_topic_publish(ADP_TOPIC_IPNET_CMD_STATUS, &result, sizeof(adp_ipnet_cmd_status_t), ADP_TOPIC_PRIORITY_HIGH);
 
     return ADP_RESULT_SUCCESS;
 }
@@ -143,8 +205,9 @@ int ipnet_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 adp_result_t adp_ipnet_initialize(adp_dispatcher_handle_t dispatcher)
 {
     // Register topics
-    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_IPSTATUS, "IPNET.Status");
+    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_IPSTATUS,    "IPNET.Status");
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_EXECUTE_CMD, "IPNET.ExecuteCmd");
+    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_CMD_STATUS,  "IPNET.CmdStatus");
     adp_topic_subscribe(ADP_TOPIC_IPNET_EXECUTE_CMD, &ipnet_cmd_handler, "ADP.IPNET.SVC.Executor");
 
     /*

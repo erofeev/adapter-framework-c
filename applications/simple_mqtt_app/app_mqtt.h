@@ -12,7 +12,9 @@
 
 int app_net_status_handler(uint32_t topic_id, void* data, uint32_t len);
 
-int app_mqtt_status_handler(uint32_t topic_id, void* data, uint32_t len);
+int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len);
+
+int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len);
 
 
 #endif /* APP_MQTT_H_ */

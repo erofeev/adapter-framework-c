@@ -25,7 +25,7 @@ typedef struct {
     uint32_t                     status;
     uint32_t                    subcode;
     void                    *session_id;
-} adp_mqtt_status_t;
+} adp_mqtt_cmd_status_t;
 
 // The content of ADP_TOPIC_MQTT_EXECUTE_CMD - ADP_MQTT_DO_CONNECT
 typedef struct {
