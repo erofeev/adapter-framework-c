@@ -29,7 +29,7 @@ void test_subpub(void* params)
 
         // Print the whole DB
         char  *data = "db\n";
-        adp_topic_publish(ADP_TOPIC_SYSTEM_CLI_INPUT_STREAM, data, strlen(data) + 1, ADP_TOPIC_PRIORITY_HIGH);
+        adp_topic_publish(ADP_TOPIC_CLI_INPUT_STREAM, data, strlen(data) + 1, ADP_TOPIC_PRIORITY_HIGH);
     }
 }
 
@@ -61,7 +61,7 @@ int main(void) {
     adp_os_start_task("Console", &adp_console_task, 128, 0, system_dispatcher);
 
     // Add app handler for receiving CLI commands requested for the execution
-    adp_topic_subscribe(ADP_TOPIC_SYSTEM_CLI_EXECUTE_CMD, &app_cmd_handler, "App CMD handler");
+    adp_topic_subscribe(ADP_TOPIC_CLI_EXECUTE_CMD, &app_cmd_handler, "App CMD handler");
 
 
     adp_os_start();

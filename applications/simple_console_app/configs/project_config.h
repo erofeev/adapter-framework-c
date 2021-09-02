@@ -21,10 +21,10 @@
 
 
 // Topics DB
-enum {
+enum app_topics_enum {
     ADP_TOPIC_SYSTEM_RESERVED                       = 0x00000000,
-    ADP_TOPIC_SYSTEM_CLI_INPUT_STREAM,
-    ADP_TOPIC_SYSTEM_CLI_EXECUTE_CMD,
+    ADP_TOPIC_CLI_INPUT_STREAM                      = 0x00000001,
+    ADP_TOPIC_CLI_EXECUTE_CMD                       = 0x00000002,
 };
 
 

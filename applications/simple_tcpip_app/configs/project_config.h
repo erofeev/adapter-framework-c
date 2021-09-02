@@ -24,11 +24,12 @@
 #define ADP_NET_HOSTNAME                             "AdpHostName"
 
 // Topics DB
-enum {
+enum app_topics_enum {
     ADP_TOPIC_SYSTEM_RESERVED                       = 0x00000000,
-    ADP_TOPIC_SYSTEM_CLI_INPUT_STREAM               = 0x00000010,
-    ADP_TOPIC_SYSTEM_CLI_EXECUTE_CMD                = 0x00000100,
-    ADP_TOPIC_SYSTEM_NET_TCPIP_STATUS               = 0x00001000,
+    ADP_TOPIC_CLI_INPUT_STREAM                      = 0x00000001,
+    ADP_TOPIC_CLI_EXECUTE_CMD                       = 0x00000002,
+    ADP_TOPIC_IPNET_IPSTATUS                        = 0x00000010,
+    ADP_TOPIC_IPNET_EXECUTE_CMD                     = 0x00000011,
 };
 
 
