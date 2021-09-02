@@ -119,33 +119,82 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
     adp_topic_publish(ADP_TOPIC_IPNET_IPSTATUS, &event_data, sizeof(event_data), ADP_TOPIC_PRIORITY_HIGH);
 }
 
-adp_result_t ipnet_socket_create()
+adp_socket_t adp_ipnet_socket_alloc(adp_socket_option_t option)
 {
+    Socket_t xSocket = FREERTOS_INVALID_SOCKET;
+
+    if (option == ADP_SOCKET_TCP) {
+        /* Create a TCP socket. */
+        xSocket = FreeRTOS_socket(FREERTOS_AF_INET, FREERTOS_SOCK_STREAM, FREERTOS_IPPROTO_TCP);
+    } else {
+        // Not supported
+        adp_log_e("Unsupported socket option");
+    }
+
+    if( xSocket == FREERTOS_INVALID_SOCKET )
+    {
+        return NULL;
+    }
+    return (adp_socket_t)xSocket;
+}
+
+void adp_ipnet_socket_free(adp_socket_t socket)
+{
+    if (socket)
+        FreeRTOS_closesocket(socket);
+}
+
+uint32_t adp_ipnet_socket_send(adp_socket_t socket, void *buffer, int bytesToSend)
+{
+    int32_t socketStatus;
+
+    socketStatus = FreeRTOS_send(socket, buffer, bytesToSend, 0);
+
+    if (socketStatus == -pdFREERTOS_ERRNO_ENOSPC) {
+        /* The TCP buffers could not accept any more bytes so zero bytes were sent.
+         * This is not necessarily an error that should cause a disconnect unless
+         * it persists so return 0 bytes received rather than an error. */
+        socketStatus = 0;
+    }
+
+    return socketStatus;
+}
 
 
-    return ADP_RESULT_FAILED;
+uint32_t adp_ipnet_socket_recv(adp_socket_t socket, void *buffer, int bytesToRecv)
+{
+    int32_t socketStatus = 1;
+
+    /* The TCP socket may have a receive block time.  If bytesToRecv is greater
+     * than 1, then a frame is likely already part way through reception and
+     * blocking to wait for the desired number of bytes to be available is the
+     * most efficient thing to do.  If bytesToRecv is 1, then this may be a
+     * speculative call to read to find the start of a new frame, in which case
+     * blocking is not desirable as it could block an entire protocol agent
+     * task for the duration of the read block time and therefore negatively
+     * impact performance.  So if bytesToRecv is 1, then don't call recv unless
+     * it is known that bytes are already available. */
+    if (bytesToRecv == 1) {
+        socketStatus = (int32_t) FreeRTOS_recvcount(socket);
+    }
+
+    if (socketStatus > 0) {
+        socketStatus = FreeRTOS_recv(socket, buffer, bytesToRecv, 0);
+    }
+
+    return socketStatus;
 }
 
 
 adp_result_t ipnet_do_tcp_connect(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_t* cmd_data)
 {
-    Socket_t xSocket;
-    adp_ipnet_cmd_connect_t *connect = (adp_ipnet_cmd_connect_t*)&cmd_data->connect;
-
-    /* Create a TCP socket. */
-    xSocket = FreeRTOS_socket(FREERTOS_AF_INET, FREERTOS_SOCK_STREAM, FREERTOS_IPPROTO_TCP);
-
-    if( xSocket == FREERTOS_INVALID_SOCKET )
-    {
-        // Failed to create socket
-        result->status     = ADP_RESULT_NO_SPACE_LEFT;
-        return ADP_RESULT_NO_SPACE_LEFT;
-    }
-
-    struct freertos_sockaddr xRemoteAddress;
-    uint32_t ipaddr = 0;
+    uint32_t ipaddr;
     char addr_str[16];
     char *hostname = "";
+    Socket_t xSocket;
+    adp_ipnet_cmd_connect_t *connect = (adp_ipnet_cmd_connect_t*)&cmd_data->connect;
+    struct freertos_sockaddr xRemoteAddress;
+
     if (connect->hostname) {
         hostname = connect->hostname;
         adp_log_d("DNS search for %s", hostname);
@@ -157,18 +206,18 @@ adp_result_t ipnet_do_tcp_connect(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_
     adp_log_d("Trying to connect to %s:%d [%s]", addr_str, connect->port, hostname);
     xRemoteAddress.sin_addr = ipaddr;
     xRemoteAddress.sin_port = FreeRTOS_htons(connect->port);
+    xSocket = connect->socket;
 
     BaseType_t status = FreeRTOS_connect(xSocket, &xRemoteAddress, sizeof(xRemoteAddress));
     if (status != pdFREERTOS_ERRNO_NONE) {
         // Failed to connect to the server
         result->status  = ADP_RESULT_FAILED;
         result->subcode = status;
-        FreeRTOS_closesocket(xSocket);
         return ADP_RESULT_FAILED;
     }
 
-    result->status     = ADP_RESULT_SUCCESS;
-    result->socket_id = xSocket;
+    result->status = ADP_RESULT_SUCCESS;
+    result->socket = xSocket;
 
     return ADP_RESULT_SUCCESS;
 }

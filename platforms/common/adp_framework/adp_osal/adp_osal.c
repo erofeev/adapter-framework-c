@@ -56,8 +56,7 @@ uint32_t adp_os_rand()
 
 void *adp_os_malloc(uint32_t size)
 {
-    void *ptr = pvPortMalloc(size);
-    return ptr;
+    return pvPortMalloc(size);;
 }
 
 void adp_os_free(void* ptr)
@@ -158,6 +157,18 @@ int adp_queue_msg_waiting(adp_os_queue_handle_t queue)
 int adp_queue_space_available(adp_os_queue_handle_t queue)
 {
     return (int)uxQueueSpacesAvailable(queue);
+}
+
+void adp_os_abnormal_stop(void)
+{
+    adp_log_e("Fatal error! Rebooting...");
+#ifdef RELEASE
+    adp_os_reboot();
+    while(1);
+#else
+    vTaskSuspendAll();
+    while(1);
+#endif
 }
 
 adp_result_t adp_os_start_task(const char* task_name, adp_os_start_task_t task_body, uint32_t stack_size, uint32_t task_prio, void* user_data)

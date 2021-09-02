@@ -20,7 +20,7 @@ typedef enum {
     ADP_RESULT_SUCCESS = 0,
 } adp_result_t;
 
-#define ADP_ASSERT(A, MSG)         do { if (!A) adp_log_f(MSG); } while (0)
+#define ADP_ASSERT(A, MSG)         do { if (!A) { adp_log_f(MSG); adp_os_abnormal_stop();} } while (0)
 
 
 typedef void (adp_os_start_task_t)(void* );
@@ -33,6 +33,8 @@ void adp_os_start(void);
 adp_result_t adp_os_start_task(const char* task_name, adp_os_start_task_t task_body, uint32_t stack_size, uint32_t task_prio, void* user_data);
 
 char* adp_os_get_task_name(void);
+
+void adp_os_abnormal_stop(void);
 
 
 // Time management

@@ -12,12 +12,13 @@
 #define ADP_MQTT_BUFFER_SIZE         2048
 
 typedef enum {
-    ADP_MQTT_DO_INIT         = 0x00000001,
-    ADP_MQTT_DO_CONNECT      = 0x00000002,
-    ADP_MQTT_DO_SUBSCRIBE    = 0x00000003,
-    ADP_MQTT_DO_PUBLISH      = 0x00000004,
-    ADP_MQTT_DO_DISCONNECT   = 0x00000005,
+    ADP_MQTT_DO_CONNECT      = 0x00000001,
+    ADP_MQTT_DO_SUBSCRIBE    = 0x00000002,
+    ADP_MQTT_DO_PUBLISH      = 0x00000003,
+    ADP_MQTT_DO_DISCONNECT   = 0x00000004,
 } adp_mqtt_command_code_t;
+
+typedef struct adp_mqtt_session_s adp_mqtt_session_t;
 
 // The content of ADP_TOPIC_MQTT_STATUS
 typedef struct {
@@ -30,6 +31,7 @@ typedef struct {
 // The content of ADP_TOPIC_MQTT_EXECUTE_CMD - ADP_MQTT_DO_CONNECT
 typedef struct {
     void                    *session_id;
+    uint16_t             ack_timeout_ms;
     uint16_t              clean_session;
     uint16_t         keep_alive_seconds;
     const char               *client_id;
@@ -45,6 +47,9 @@ typedef struct {
     };
 } adp_mqtt_cmd_t;
 
+adp_mqtt_session_t* adp_mqtt_session_alloc(void* socket);
+
+void adp_mqtt_session_free(adp_mqtt_session_t* session);
 
 adp_result_t adp_mqtt_initialize(adp_dispatcher_handle_t dispatcher);
 
