@@ -66,7 +66,10 @@ int adp_queue_msg_total(adp_os_queue_handle_t queue);
 
 int adp_queue_msg_waiting(adp_os_queue_handle_t queue);
 
-// Debug Util
+
+// Misc & Debug Util
+int adp_os_get_max_prio(void);
+
 void adp_os_get_tasks_rtstats(char *buffer);
 
 void adp_os_get_tasks_list(char *buffer);

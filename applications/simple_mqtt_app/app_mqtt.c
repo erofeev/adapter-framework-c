@@ -138,7 +138,7 @@ int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
         {
             if (cmd_status->status == ADP_RESULT_SUCCESS) {
                 // Start establishing MQTT session
-                do_mqtt_connect(250);
+                do_mqtt_connect(550);
             } else {
                 // Create a tcp socket and try to connect to the server again
                 do_tcp_connect();
@@ -152,17 +152,10 @@ int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
     return ADP_RESULT_SUCCESS;
 }
 
-int app_mqtt_socket_activity_handler(uint32_t topic_id, void* data, uint32_t len)
-{
-    if (s_mqtt_session) {
-        MQTT_ReceiveLoop(s_mqtt_session, 100);
-    }
-}
-
 // Handling: MQTT session
 int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
 {
-    static int timeout_ms = 100;
+    static int timeout_ms = 200;
     adp_mqtt_cmd_status_t *cmd_status = (adp_mqtt_cmd_status_t*)data;
     adp_log("Status: MQTT cmd #%d executed with result %s (subcode: %d sessionId 0x%x)",
             cmd_status->command,
@@ -192,7 +185,7 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
 
             } else {
                 // Try again
-                adp_os_sleep(100);
+                adp_os_sleep(1000);
                 do_mqtt_subscribe();
             }
         }

@@ -37,29 +37,40 @@ typedef struct NetworkContext {
 
 void mqtt_eventCallback(MQTTContext_t *pContext, MQTTPacketInfo_t *pPacketInfo, MQTTDeserializedInfo_t *pDeserializedInfo)
 {
-    // Notify about event
-    adp_log_e("EVENT cb - TODO not implemented yet 0x%x 0x%x 0x%x", pContext, pPacketInfo, pDeserializedInfo);
-    adp_log_e("EVENT cb conn status : %d", pContext->connectStatus);
-
-    if (pDeserializedInfo->deserializationResult != MQTTSuccess) {
-        adp_log_d("Deserialization error [%s]", MQTT_Status_strerror(pDeserializedInfo->deserializationResult));
+    if (pPacketInfo->type == MQTT_PACKET_TYPE_SUBACK) {
+        adp_mqtt_cmd_status_t  result;
+        result.command    = ADP_MQTT_DO_SUBSCRIBE;
+        result.session_id = 0;// FIXME set valid session id
+        result.status     = ADP_RESULT_SUCCESS;
+        result.subcode    = 0;
+        adp_topic_publish(ADP_TOPIC_MQTT_CMD_STATUS, &result, sizeof(adp_mqtt_cmd_status_t), ADP_TOPIC_PRIORITY_HIGH);
         return;
     }
-    adp_log(" T [%s], P [%s]", pDeserializedInfo->pPublishInfo->pTopicName, pDeserializedInfo->pPublishInfo->pPayload);
-/*    size_t event_size = sizeof(adp_mqtt_received_topic_t ) + pDeserializedInfo->pPublishInfo->topicNameLength + pDeserializedInfo->pPublishInfo->payloadLength + 2;
+
+    if ((pPacketInfo->type & 0xF0U) != MQTT_PACKET_TYPE_PUBLISH) {
+        return;
+    }
+
+    if (pDeserializedInfo->deserializationResult != MQTTSuccess) {
+        adp_log_e("Deserialization error [%s]", MQTT_Status_strerror(pDeserializedInfo->deserializationResult));
+        return;
+    }
+
+    size_t event_size = sizeof(adp_mqtt_received_topic_t) + pDeserializedInfo->pPublishInfo->topicNameLength + pDeserializedInfo->pPublishInfo->payloadLength;
     adp_mqtt_received_topic_t *topic = adp_os_malloc(event_size);
     ADP_ASSERT(topic, "Unable to store incoming data");
+    memset(topic, 0x00, event_size);
 
-    adp_log_d(" T [%s], P [%s]", pDeserializedInfo->pPublishInfo->pTopicName, pDeserializedInfo->pPublishInfo->pPayload);
     topic->session_id      = pContext;
-    topic->topic_name_size = pDeserializedInfo->pPublishInfo->topicNameLength + 1;
-    topic->payload_size    = pDeserializedInfo->pPublishInfo->payloadLength + 1;
+    topic->topic_name_size = pDeserializedInfo->pPublishInfo->topicNameLength;
+    topic->payload_size    = pDeserializedInfo->pPublishInfo->payloadLength;
+    topic->topic_name      = topic + sizeof(adp_mqtt_received_topic_t);
+    topic->payload         = topic + sizeof(adp_mqtt_received_topic_t) + topic->topic_name_size;
     memcpy(topic + sizeof(adp_mqtt_received_topic_t), pDeserializedInfo->pPublishInfo->pTopicName, topic->topic_name_size);
     memcpy(topic + sizeof(adp_mqtt_received_topic_t) + topic->topic_name_size, pDeserializedInfo->pPublishInfo->pPayload, topic->payload_size);
 
-
     adp_topic_publish(ADP_TOPIC_MQTT_INCOMING_TOPIC, topic, event_size, ADP_TOPIC_PRIORITY_HIGH);
-*/
+    adp_os_free(topic);
 }
 
 
@@ -120,7 +131,7 @@ adp_mqtt_session_t* adp_mqtt_session_alloc(void* socket)
     MQTTStatus_t core_mqtt_status = MQTT_Init(&session->context,
                                               &transport_if,
                                               adp_os_uptime_ms,
-                                              (MQTTEventCallback_t)mqtt_eventCallback,
+                                              (MQTTEventCallback_t)&mqtt_eventCallback,
                                               &data_buffer);
 
     if( core_mqtt_status != MQTTSuccess ) {
@@ -237,7 +248,7 @@ int mqtt_socket_recv(uint32_t topic_id, void* data, uint32_t len)
             continue;
         if (s_session_db[i]->context.transportInterface.pNetworkContext->socket == *socket) {
             adp_log_e("MQTT processing sessionId 0x%x", s_session_db[i]);
-            MQTT_ProcessLoop(&s_session_db[i]->context, 100);
+            MQTT_ProcessLoop(&s_session_db[i]->context, 1);
             break;
         }
     }
@@ -263,6 +274,8 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
         {
             adp_log_d("MQTT - DO_SUBSCRIBE");
             mqtt_do_subscribe(&result, (adp_mqtt_cmd_t*)data);
+            // Do not notify user, because ACK should be received and only then we notify the user
+            return ADP_RESULT_SUCCESS;
         }
         break;
     default:

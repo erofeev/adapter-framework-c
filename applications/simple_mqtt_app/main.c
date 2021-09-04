@@ -37,9 +37,9 @@ int app_mqtt_incoming_handler(uint32_t topic_id, void* data, uint32_t len)
 {
     adp_mqtt_received_topic_t *topic_data = data;
 
-    /*
+
     adp_log("INCOMING DATA Topic [%s], Data [%s]", topic_data->topic_name, topic_data->payload);
-   */
+
     return ADP_RESULT_SUCCESS;
 }
 
@@ -54,7 +54,7 @@ int main(void) {
     adp_os_start_task("Console", &adp_console_task, 128, 0, low_prio_dispatcher);
 
     // Initialize TCP/IP stack & MQTT protocol
-    adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create(adp_os_get_max_prio() - 3, 5);
+    adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create(adp_os_get_max_prio() - 3, 25);
     adp_ipnet_initialize(network_dispatcher);
     adp_mqtt_initialize(network_dispatcher);
 
