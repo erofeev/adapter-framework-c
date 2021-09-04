@@ -16,6 +16,14 @@
 #include "adp_logging.h"
 
 
+#ifdef ADP_OS_MODULE_NO_DEBUG
+ #ifdef adp_log_d
+  #undef  adp_log_d
+ #endif
+ #define adp_log_d(...)
+#endif
+
+
 ADP_WEAK
 void vApplicationIdleHook( void )
 {
@@ -35,7 +43,7 @@ void vApplicationDaemonTaskStartupHook( void )
 ADP_WEAK
 BaseType_t xApplicationGetRandomNumber( uint32_t * pulNumber )
 {
-    *( pulNumber ) = adp_os_rand();
+    *(pulNumber) = adp_os_rand();
     return pdTRUE;
 }
 
@@ -51,6 +59,7 @@ uint32_t adp_os_rand()
     static int i = 0;
     if (!i) { srand(time(NULL)); i = 1; }
     uint32_t r = rand();
+    adp_log_d("RND is 0x%x", r);
     return r;
 }
 
@@ -127,7 +136,7 @@ adp_result_t adp_queue_receive(adp_os_queue_handle_t queue, void * const item, u
 
 adp_result_t adp_os_queue_put(adp_os_queue_handle_t queue, const void *item)
 {
-    BaseType_t result = xQueueSend(queue, item, 100 /* 100 ms */ );
+    BaseType_t result = xQueueSend(queue, item, ADP_OS_DEFAULT_QUEUE_PUT_TIMEOUT_MS );
 
     if (result == errQUEUE_FULL) {
         return ADP_RESULT_NO_SPACE_LEFT;

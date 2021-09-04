@@ -20,6 +20,7 @@ static void do_tcp_connect()
     // Clean socket
     if (tcp_socket_mosquitto) {
         adp_ipnet_socket_free(tcp_socket_mosquitto);
+        tcp_socket_mosquitto = NULL;
     }
     // Create a new tcp socket and try to connect to the server
     tcp_socket_mosquitto = adp_ipnet_socket_alloc(ADP_SOCKET_TCP);
@@ -39,6 +40,7 @@ static void do_mqtt_connect(int timeout_ms)
 {
     if (mqtt_session) {
         adp_mqtt_session_free(mqtt_session);
+        mqtt_session = NULL;
     }
     // Create a new tcp socket and try to establish MQTT connection to the broker
     mqtt_session = adp_mqtt_session_alloc(tcp_socket_mosquitto);
@@ -79,7 +81,7 @@ int app_net_status_handler(uint32_t topic_id, void* data, uint32_t len)
         break;
     case ADP_IPNET_STACK_DOWN:
         {
-            adp_ipnet_socket_free(tcp_socket_mosquitto);
+            // Nothing to do
         }
         break;
     default:
@@ -100,7 +102,7 @@ int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
             cmd_status->subcode,
             cmd_status->socket);
 
-    // Process only for our socket
+    // Process items related to our socket
     if (cmd_status->socket != tcp_socket_mosquitto) {
         return ADP_RESULT_SUCCESS;
     }
@@ -110,7 +112,7 @@ int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
         {
             if (cmd_status->status == ADP_RESULT_SUCCESS) {
                 // Start establishing MQTT session
-                do_mqtt_connect(50);
+                do_mqtt_connect(250);
             } else {
                 // Create a tcp socket and try to connect to the server again
                 do_tcp_connect();
@@ -135,18 +137,21 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
             cmd_status->subcode,
             cmd_status->session_id);
 
-    // MQTT init is done, try to connect to the broker
-    if (cmd_status->command == ADP_MQTT_DO_CONNECT) {
-        if (cmd_status->status != ADP_RESULT_SUCCESS) {
-            // Try again
-            do_mqtt_connect(timeout_ms);
-            timeout_ms += 50;
-            timeout_ms = timeout_ms % 3000; // not greater than 3 seconds
-        } else {
-            adp_log("MQTT SUCCESFULLY CONNECTED");
+    switch (cmd_status->command) {
+    case ADP_MQTT_DO_CONNECT:
+        {
+            if (cmd_status->status == ADP_RESULT_SUCCESS) {
+                adp_log("MQTT SUCCESFULLY CONNECTED");
+            } else {
+                // Try again
+                do_mqtt_connect(timeout_ms);
+                timeout_ms += 100;
+                timeout_ms = timeout_ms % 3000; // not greater than 3 seconds
+            }
         }
-    } else {
-        // Nothing to do
+        break;
+    default:
+        break;
     }
 
     return ADP_RESULT_SUCCESS;

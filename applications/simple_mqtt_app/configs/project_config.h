@@ -7,12 +7,15 @@
 #ifndef APP_CONFIG_H_
 #define APP_CONFIG_H_
 
+// APP OS settings
+#define ADP_OS_MODULE_NO_DEBUG
+#define ADP_OS_DEFAULT_QUEUE_PUT_TIMEOUT_MS         100
 
 // APP Dispatcher settings
 #define ADP_DISPATCHER_MODULE_NO_DEBUG
 #define ADP_DISPATCHER_TABLE_SIZE                    10
 #define ADP_DISPATCHER_TOPIC_NAME_SIZE               32  /* Should be greater than 0 */
-#define ADP_DISPATCHER_SUBSCIBER_NAME_SIZE           32  /* Should be greater than 0 */
+#define ADP_DISPATCHER_SUBSCRIBER_NAME_SIZE          32  /* Should be greater than 0 */
 #define ADP_SUBSCRIBER_TABLE_SIZE                    10
 
 // APP Console settings

@@ -139,7 +139,7 @@ adp_result_t mqtt_do_connect(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_t* cmd_
     result->subcode    = core_mqtt_status;
 
     if( core_mqtt_status != MQTTSuccess ) {
-        adp_log_e("MQTT connect result is %d [%s]", core_mqtt_status, MQTT_Status_strerror(core_mqtt_status));
+        adp_log_d("MQTT connect result is %d [%s]", core_mqtt_status, MQTT_Status_strerror(core_mqtt_status));
         result->status = ADP_RESULT_FAILED;
     } else {
         result->status = ADP_RESULT_SUCCESS;

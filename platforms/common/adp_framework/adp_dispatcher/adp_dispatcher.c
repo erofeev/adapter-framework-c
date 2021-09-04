@@ -31,7 +31,7 @@ typedef struct {
 typedef struct {
     uint32_t                topic_target;
     adp_topic_cb                *dest_cb;
-    char                    dest_cb_name[ADP_DISPATCHER_SUBSCIBER_NAME_SIZE];
+    char                    dest_cb_name[ADP_DISPATCHER_SUBSCRIBER_NAME_SIZE];
 } adp_subscriber_t;
 
 typedef struct {
@@ -205,7 +205,7 @@ adp_result_t adp_topic_subscribe (uint32_t topic_target, adp_topic_cb subscriber
         if (!subscriber_table[i].dest_cb) {
             subscriber_table[i].topic_target = topic_target;
             subscriber_table[i].dest_cb      = subscriber_cb;
-            snprintf(subscriber_table[i].dest_cb_name, ADP_DISPATCHER_SUBSCIBER_NAME_SIZE, "%s",  subscriber_name);
+            snprintf(subscriber_table[i].dest_cb_name, ADP_DISPATCHER_SUBSCRIBER_NAME_SIZE, "%s",  subscriber_name);
             adp_log_d("Subscriber '%s' registered for 0x%08x", subscriber_name, topic_target);
             // Print all topics that corresponds to the mask
             for (int k = 0; k < ADP_DISPATCHER_TABLE_SIZE; ++k) {
