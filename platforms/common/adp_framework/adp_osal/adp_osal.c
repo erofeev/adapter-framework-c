@@ -65,11 +65,14 @@ uint32_t adp_os_rand()
 
 void *adp_os_malloc(uint32_t size)
 {
-    return pvPortMalloc(size);;
+    void *ptr = pvPortMalloc(size);
+    adp_log_d("Mem alloc 0x%x", ptr, size);
+    return ptr;
 }
 
 void adp_os_free(void* ptr)
 {
+    adp_log_d("Mem free 0x%x", ptr);
     if (ptr)
         vPortFree(ptr);
 }

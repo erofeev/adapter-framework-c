@@ -8,7 +8,7 @@
 #define APP_CONFIG_H_
 
 // APP OS settings
-#define ADP_OS_MODULE_NO_DEBUG
+#undef ADP_OS_MODULE_NO_DEBUG
 #define ADP_OS_DEFAULT_QUEUE_PUT_TIMEOUT_MS         100
 
 // APP Dispatcher settings

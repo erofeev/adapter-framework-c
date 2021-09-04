@@ -28,7 +28,7 @@ typedef struct NetworkContext {
  } adp_network_context_t;
 
  struct adp_mqtt_session_s {
-      MQTTContext_t             context;
+      MQTTContext_t                  context;
       MQTTConnectInfo_t         connect_info;
       MQTTSubscribeInfo_t    *subscribe_info;
  };
@@ -64,8 +64,8 @@ void mqtt_eventCallback(MQTTContext_t *pContext, MQTTPacketInfo_t *pPacketInfo, 
     topic->session_id      = pContext;
     topic->topic_name_size = pDeserializedInfo->pPublishInfo->topicNameLength;
     topic->payload_size    = pDeserializedInfo->pPublishInfo->payloadLength;
-    topic->topic_name      = topic + sizeof(adp_mqtt_received_topic_t);
-    topic->payload         = topic + sizeof(adp_mqtt_received_topic_t) + topic->topic_name_size;
+    topic->topic_name      = (char*)(topic + sizeof(adp_mqtt_received_topic_t));
+    topic->payload         = (uint8_t*)(topic + sizeof(adp_mqtt_received_topic_t) + topic->topic_name_size);
     memcpy(topic + sizeof(adp_mqtt_received_topic_t), pDeserializedInfo->pPublishInfo->pTopicName, topic->topic_name_size);
     memcpy(topic + sizeof(adp_mqtt_received_topic_t) + topic->topic_name_size, pDeserializedInfo->pPublishInfo->pPayload, topic->payload_size);
 
