@@ -76,6 +76,14 @@ BaseType_t xApplicationDNSQueryHook(const char *pcName)
 }
 
 
+static
+void ipnet_client_socket_wakeup_cb(adp_socket_t pxSocket)
+{
+    adp_log_d("Detected activity on socket 0x%x", pxSocket);
+    adp_topic_publish(ADP_TOPIC_IPNET_SOCKET_ACTIVITY, &pxSocket, sizeof(adp_socket_t), ADP_TOPIC_PRIORITY_HIGH);
+}
+
+
 void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
 {
     uint32_t ulIPAddress, ulNetMask, ulGatewayAddress, ulDNSServerAddress;
@@ -206,9 +214,22 @@ adp_result_t ipnet_do_tcp_connect(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_
     adp_log_d("Trying to connect to %s:%d [%s]", addr_str, connect->port, hostname);
     xRemoteAddress.sin_addr = ipaddr;
     xRemoteAddress.sin_port = FreeRTOS_htons(connect->port);
-    xSocket = connect->socket;
+    xSocket = cmd_data->socket;
 
     BaseType_t status = FreeRTOS_connect(xSocket, &xRemoteAddress, sizeof(xRemoteAddress));
+    if (status != pdFREERTOS_ERRNO_NONE) {
+        // Failed to connect to the server
+        result->status  = ADP_RESULT_FAILED;
+        result->subcode = status;
+        return ADP_RESULT_FAILED;
+    }
+
+    // Start monitoring activity on the socket
+    status = FreeRTOS_setsockopt(xSocket,
+                                  0, /* Level - Unused. */
+                                  FREERTOS_SO_WAKEUP_CALLBACK,
+                                  (void*)ipnet_client_socket_wakeup_cb,
+                                  sizeof(&(ipnet_client_socket_wakeup_cb)));
     if (status != pdFREERTOS_ERRNO_NONE) {
         // Failed to connect to the server
         result->status  = ADP_RESULT_FAILED;
@@ -254,9 +275,10 @@ int ipnet_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 adp_result_t adp_ipnet_initialize(adp_dispatcher_handle_t dispatcher)
 {
     // Register topics
-    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_IPSTATUS,    "IPNET.Status");
-    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_EXECUTE_CMD, "IPNET.ExecuteCmd");
-    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_CMD_STATUS,  "IPNET.CmdStatus");
+    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_IPSTATUS,        "IPNET.Status");
+    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_EXECUTE_CMD,     "IPNET.ExecuteCmd");
+    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_CMD_STATUS,      "IPNET.CmdStatus");
+    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_SOCKET_ACTIVITY, "IPNET.SocketIOActivity");
     adp_topic_subscribe(ADP_TOPIC_IPNET_EXECUTE_CMD, &ipnet_cmd_handler, "ADP.IPNET.SVC.Executor");
 
     /*

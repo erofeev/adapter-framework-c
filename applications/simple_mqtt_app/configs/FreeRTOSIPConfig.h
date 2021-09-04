@@ -354,6 +354,10 @@ disconnecting stage will timeout after a period of non-activity. */
 #define ipconfigTCP_KEEP_ALIVE              ( 1 )
 #define ipconfigTCP_KEEP_ALIVE_INTERVAL     ( 20 ) /* in seconds */
 
+#define iptraceNETWORK_EVENT_RECEIVED       (void)
+
+#define ipconfigSOCKET_HAS_USER_WAKE_CALLBACK ( 1 )
+
 #define portINLINE __inline
 
 #endif /* FREERTOS_IP_CONFIG_H */

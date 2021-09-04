@@ -36,7 +36,6 @@ typedef struct {
 
 // The content of ADP_TOPIC_IPNET_EXECUTE_CMD - ADP_IPNET_DO_TCP_CONNECT
 typedef struct {
-    adp_socket_t                 socket;
     uint16_t                       port;
     char                      *hostname;
     uint8_t                   ip_octet1;
@@ -48,6 +47,7 @@ typedef struct {
 // The content of ADP_TOPIC_IPNET_EXECUTE_CMD
 typedef struct {
     adp_ipnet_command_code_t     command;
+    adp_socket_t                  socket;
     union {
         adp_ipnet_cmd_connect_t  connect;
     };

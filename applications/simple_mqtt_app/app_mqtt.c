@@ -12,25 +12,39 @@
 #include "adp_tcpip.h"
 #include "adp_mqtt.h"
 
-adp_socket_t        tcp_socket_mosquitto = NULL;
-adp_mqtt_session_t *mqtt_session         = NULL;
+adp_socket_t        s_tcp_socket_mosquitto = NULL;
+adp_mqtt_session_t *s_mqtt_session         = NULL;
+adp_mqtt_topic_filter_t topics[] = {
+        {
+                .QoS = 0,
+                .topic_filter = "#",
+        },
+        {
+                .QoS = 0,
+                .topic_filter = "tele",
+        },
+        {
+                .QoS = 0,
+                .topic_filter = "testxmr",
+        },
+};
 
 static void do_tcp_connect()
 {
     // Clean socket
-    if (tcp_socket_mosquitto) {
-        adp_ipnet_socket_free(tcp_socket_mosquitto);
-        tcp_socket_mosquitto = NULL;
+    if (s_tcp_socket_mosquitto) {
+        adp_ipnet_socket_free(s_tcp_socket_mosquitto);
+        s_tcp_socket_mosquitto = NULL;
     }
     // Create a new tcp socket and try to connect to the server
-    tcp_socket_mosquitto = adp_ipnet_socket_alloc(ADP_SOCKET_TCP);
-    if (!tcp_socket_mosquitto) {
+    s_tcp_socket_mosquitto = adp_ipnet_socket_alloc(ADP_SOCKET_TCP);
+    if (!s_tcp_socket_mosquitto) {
         adp_log_e("Fatal problem: unable to create socket");
-        ADP_ASSERT(tcp_socket_mosquitto, "General fault");
+        ADP_ASSERT(s_tcp_socket_mosquitto, "General fault");
     }
     adp_ipnet_cmd_t ipnet_connect = {
                .command           = ADP_IPNET_DO_TCP_CONNECT,
-               .connect.socket    = tcp_socket_mosquitto,
+               .socket            = s_tcp_socket_mosquitto,
                .connect.port      = 1883,
                .connect.hostname  = "test.mosquitto.org" } ;
     adp_topic_publish(ADP_TOPIC_IPNET_EXECUTE_CMD, &ipnet_connect, sizeof(adp_ipnet_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
@@ -38,18 +52,18 @@ static void do_tcp_connect()
 
 static void do_mqtt_connect(int timeout_ms)
 {
-    if (mqtt_session) {
-        adp_mqtt_session_free(mqtt_session);
-        mqtt_session = NULL;
+    if (s_mqtt_session) {
+        adp_mqtt_session_free(s_mqtt_session);
+        s_mqtt_session = NULL;
     }
     // Create a new tcp socket and try to establish MQTT connection to the broker
-    mqtt_session = adp_mqtt_session_alloc(tcp_socket_mosquitto);
-    ADP_ASSERT(mqtt_session, "Fatal problem: unable to create MQTT session");
+    s_mqtt_session = adp_mqtt_session_alloc(s_tcp_socket_mosquitto);
+    ADP_ASSERT(s_mqtt_session, "Fatal problem: unable to create MQTT session");
 
     // Connect to the broker
     adp_mqtt_cmd_t mqtt_connect = {
             .command                         = ADP_MQTT_DO_CONNECT,
-            .connect.session_id              = mqtt_session,
+            .session_id                      = s_mqtt_session,
             .connect.clean_session           = 1,
             .connect.keep_alive_seconds      = 60,
             .connect.client_id               = "CLIENT_ID",
@@ -58,6 +72,18 @@ static void do_mqtt_connect(int timeout_ms)
             .connect.ack_timeout_ms          = timeout_ms,
     };
     adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_connect, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
+}
+
+static void do_mqtt_subscribe()
+{
+    // Connect to the broker
+    adp_mqtt_cmd_t mqtt_subscribe = {
+            .command                         = ADP_MQTT_DO_SUBSCRIBE,
+            .session_id                      = s_mqtt_session,
+            .subscribe.number_of_filters     = sizeof(topics)/sizeof(adp_mqtt_topic_filter_t),
+            .subscribe.filters               = topics,
+    };
+    adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_subscribe, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
 }
 
 // Handling: Net is UP or DOWN
@@ -103,7 +129,7 @@ int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
             cmd_status->socket);
 
     // Process items related to our socket
-    if (cmd_status->socket != tcp_socket_mosquitto) {
+    if (cmd_status->socket != s_tcp_socket_mosquitto) {
         return ADP_RESULT_SUCCESS;
     }
 
@@ -126,6 +152,13 @@ int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
     return ADP_RESULT_SUCCESS;
 }
 
+int app_mqtt_socket_activity_handler(uint32_t topic_id, void* data, uint32_t len)
+{
+    if (s_mqtt_session) {
+        MQTT_ReceiveLoop(s_mqtt_session, 100);
+    }
+}
+
 // Handling: MQTT session
 int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
 {
@@ -142,11 +175,25 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
         {
             if (cmd_status->status == ADP_RESULT_SUCCESS) {
                 adp_log("MQTT SUCCESFULLY CONNECTED");
+                // Subscribe for topics
+                do_mqtt_subscribe();
             } else {
                 // Try again
                 do_mqtt_connect(timeout_ms);
                 timeout_ms += 100;
                 timeout_ms = timeout_ms % 3000; // not greater than 3 seconds
+            }
+        }
+        break;
+    case ADP_MQTT_DO_SUBSCRIBE:
+        {
+            if (cmd_status->status == ADP_RESULT_SUCCESS) {
+                adp_log("MQTT SUCCESFULLY SUBSCRIBED");
+
+            } else {
+                // Try again
+                adp_os_sleep(100);
+                do_mqtt_subscribe();
             }
         }
         break;

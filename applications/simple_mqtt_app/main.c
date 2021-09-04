@@ -33,6 +33,15 @@ void print_info(void* params)
     }
 }
 
+int app_mqtt_incoming_handler(uint32_t topic_id, void* data, uint32_t len)
+{
+    adp_mqtt_received_topic_t *topic_data = data;
+
+    /*
+    adp_log("INCOMING DATA Topic [%s], Data [%s]", topic_data->topic_name, topic_data->payload);
+   */
+    return ADP_RESULT_SUCCESS;
+}
 
 int main(void) {
     adp_log("Creating the World");
@@ -50,10 +59,11 @@ int main(void) {
     adp_mqtt_initialize(network_dispatcher);
 
     // Subscribe for topics we want
-    adp_topic_subscribe(ADP_TOPIC_CLI_EXECUTE_CMD, &app_cmd_handler, "USER app_cmd_handler");
-    adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS,   &app_net_status_handler,      "USER app_net_status_handler");
-    adp_topic_subscribe(ADP_TOPIC_IPNET_CMD_STATUS, &app_net_cmd_status_handler,  "USER app_net_cmd_status_handler");
-    adp_topic_subscribe(ADP_TOPIC_MQTT_CMD_STATUS,  &app_mqtt_cmd_status_handler, "USER app_mqtt_cmd_status_handler");
+    adp_topic_subscribe(ADP_TOPIC_CLI_EXECUTE_CMD,     &app_cmd_handler,             "USER app_cmd_handler");
+    adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS,      &app_net_status_handler,      "USER app_net_status_handler");
+    adp_topic_subscribe(ADP_TOPIC_IPNET_CMD_STATUS,    &app_net_cmd_status_handler,  "USER app_net_cmd_status_handler");
+    adp_topic_subscribe(ADP_TOPIC_MQTT_CMD_STATUS,     &app_mqtt_cmd_status_handler, "USER app_mqtt_cmd_status_handler");
+    adp_topic_subscribe(ADP_TOPIC_MQTT_INCOMING_TOPIC, &app_mqtt_incoming_handler,   "USER app_mqtt_incoming_handler");
 
     adp_os_start();
 
