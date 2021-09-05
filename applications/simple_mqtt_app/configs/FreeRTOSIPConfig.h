@@ -37,8 +37,6 @@
 
 /* networking definitions */
 #define configMAC_ISR_SIMULATOR_PRIORITY    ( configMAX_PRIORITIES - 1 )
-#define ipconfigUSE_NETWORK_EVENT_HOOK 1
-//#define ipconfigSOCK_DEFAULT_RECEIVE_BLOCK_TIME  pdMS_TO_TICKS(5000)
 #define configNETWORK_INTERFACE_TO_USE 1L
 
 
@@ -353,8 +351,6 @@ disconnecting stage will timeout after a period of non-activity. */
 /* Include support for TCP keep-alive messages. */
 #define ipconfigTCP_KEEP_ALIVE              ( 1 )
 #define ipconfigTCP_KEEP_ALIVE_INTERVAL     ( 20 ) /* in seconds */
-
-#define iptraceNETWORK_EVENT_RECEIVED       (void)
 
 #define ipconfigSOCKET_HAS_USER_WAKE_CALLBACK ( 1 )
 

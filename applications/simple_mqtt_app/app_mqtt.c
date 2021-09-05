@@ -17,30 +17,22 @@ adp_mqtt_session_t *s_mqtt_session         = NULL;
 adp_mqtt_topic_filter_t topics[] = {
         {
                 .QoS = 0,
-                .topic_filter = "#",
-        },
-        {
-                .QoS = 0,
                 .topic_filter = "tele",
         },
         {
-                .QoS = 0,
+                .QoS = 2,
                 .topic_filter = "testxmr",
         },
 };
 
+
 static void do_tcp_connect()
 {
     // Clean socket
-    if (s_tcp_socket_mosquitto) {
-        adp_ipnet_socket_free(s_tcp_socket_mosquitto);
-        s_tcp_socket_mosquitto = NULL;
-    }
-    // Create a new tcp socket and try to connect to the server
-    s_tcp_socket_mosquitto = adp_ipnet_socket_alloc(ADP_SOCKET_TCP);
     if (!s_tcp_socket_mosquitto) {
-        adp_log_e("Fatal problem: unable to create socket");
-        ADP_ASSERT(s_tcp_socket_mosquitto, "General fault");
+        // Create a new tcp socket and try to connect to the server
+        s_tcp_socket_mosquitto = adp_ipnet_socket_alloc(ADP_SOCKET_TCP);
+        ADP_ASSERT(s_tcp_socket_mosquitto, "Fatal problem: unable to create socket");
     }
     adp_ipnet_cmd_t ipnet_connect = {
                .command           = ADP_IPNET_DO_TCP_CONNECT,
@@ -50,16 +42,14 @@ static void do_tcp_connect()
     adp_topic_publish(ADP_TOPIC_IPNET_EXECUTE_CMD, &ipnet_connect, sizeof(adp_ipnet_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
 }
 
+
 static void do_mqtt_connect(int timeout_ms)
 {
-    if (s_mqtt_session) {
-        adp_mqtt_session_free(s_mqtt_session);
-        s_mqtt_session = NULL;
+    if (!s_mqtt_session) {
+        // Create a new tcp socket and try to establish MQTT connection to the broker
+        s_mqtt_session = adp_mqtt_session_alloc(s_tcp_socket_mosquitto);
+        ADP_ASSERT(s_mqtt_session, "Fatal problem: unable to create MQTT session");
     }
-    // Create a new tcp socket and try to establish MQTT connection to the broker
-    s_mqtt_session = adp_mqtt_session_alloc(s_tcp_socket_mosquitto);
-    ADP_ASSERT(s_mqtt_session, "Fatal problem: unable to create MQTT session");
-
     // Connect to the broker
     adp_mqtt_cmd_t mqtt_connect = {
             .command                         = ADP_MQTT_DO_CONNECT,
@@ -84,6 +74,15 @@ static void do_mqtt_subscribe()
             .subscribe.filters               = topics,
     };
     adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_subscribe, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
+}
+
+static void do_mqtt_disconnect()
+{
+    adp_mqtt_cmd_t mqtt_disconnect = {
+            .command    = ADP_MQTT_DO_DISCONNECT,
+            .session_id = s_mqtt_session,
+    };
+    adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_disconnect, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
 }
 
 // Handling: Net is UP or DOWN
@@ -138,7 +137,7 @@ int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
         {
             if (cmd_status->status == ADP_RESULT_SUCCESS) {
                 // Start establishing MQTT session
-                do_mqtt_connect(550);
+                do_mqtt_connect(1000);
             } else {
                 // Create a tcp socket and try to connect to the server again
                 do_tcp_connect();
@@ -152,10 +151,16 @@ int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
     return ADP_RESULT_SUCCESS;
 }
 
+
 // Handling: MQTT session
 int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
 {
-    static int timeout_ms = 200;
+    if (topic_id == ADP_TOPIC_MQTT_SESSION_STATUS) {
+        // Disconnect event happened
+        adp_log("MQTT ADP_TOPIC_MQTT_SESSION_STATUS received");
+        return ADP_RESULT_SUCCESS;
+    }
+
     adp_mqtt_cmd_status_t *cmd_status = (adp_mqtt_cmd_status_t*)data;
     adp_log("Status: MQTT cmd #%d executed with result %s (subcode: %d sessionId 0x%x)",
             cmd_status->command,
@@ -171,10 +176,8 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
                 // Subscribe for topics
                 do_mqtt_subscribe();
             } else {
-                // Try again
-                do_mqtt_connect(timeout_ms);
-                timeout_ms += 100;
-                timeout_ms = timeout_ms % 3000; // not greater than 3 seconds
+                // Send DISCONNECT, let's try to clean up everything and try again
+                do_mqtt_disconnect();
             }
         }
         break;
@@ -182,12 +185,16 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
         {
             if (cmd_status->status == ADP_RESULT_SUCCESS) {
                 adp_log("MQTT SUCCESFULLY SUBSCRIBED");
-
             } else {
-                // Try again
-                adp_os_sleep(1000);
-                do_mqtt_subscribe();
+                // Send DISCONNECT, let's try to clean up everything and try again
+                do_mqtt_disconnect();
             }
+        }
+        break;
+    case ADP_MQTT_DO_DISCONNECT:
+        {
+             adp_log("MQTT SUCCESFULLY DISCONNECTED - DO WE WANT TO TRY AGAIN?");
+             do_tcp_connect();
         }
         break;
     default:

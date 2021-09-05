@@ -22,8 +22,12 @@
 
 #include "adp_osal.h"
 #include "log.h"
+#ifndef ADP_LOG_USE_COLOR
 #define LOG_USE_COLOR 1
-#define MAX_CALLBACKS 32
+#else
+#define LOG_USE_COLOR ADP_LOG_USE_COLOR
+#endif
+#define MAX_CALLBACKS 1
 
 typedef struct {
   log_LogFn fn;

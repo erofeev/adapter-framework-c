@@ -15,7 +15,8 @@ typedef enum {
     ADP_MQTT_DO_CONNECT      = 0x00000001,
     ADP_MQTT_DO_SUBSCRIBE    = 0x00000002,
     ADP_MQTT_DO_PUBLISH      = 0x00000003,
-    ADP_MQTT_DO_DISCONNECT   = 0x00000004,
+    ADP_MQTT_DO_PROCESS_LOOP = 0x00000004,
+    ADP_MQTT_DO_DISCONNECT   = 0x00000005,
 } adp_mqtt_command_code_t;
 
 typedef struct adp_mqtt_session_s adp_mqtt_session_t;
@@ -64,8 +65,7 @@ typedef struct {
     void                        *session_id;
     size_t                  topic_name_size;
     size_t                     payload_size;
-    const char                  *topic_name;
-    uint8_t                        *payload;
+    uint8_t                       buffer[0];
 } adp_mqtt_received_topic_t;
 
 adp_mqtt_session_t* adp_mqtt_session_alloc(void* socket);

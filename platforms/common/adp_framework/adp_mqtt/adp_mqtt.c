@@ -35,12 +35,30 @@ typedef struct NetworkContext {
 
  adp_mqtt_session_t *s_session_db[ADP_MQTT_SESSIONS_MAX_NUMBER] = {0};
 
+ static
+ adp_mqtt_session_t* mqtt_find_session(void *socket)
+ {
+     for (int i = 0; i < ADP_MQTT_SESSIONS_MAX_NUMBER; i++) {
+         if (s_session_db[i]->context.transportInterface.pNetworkContext->socket == socket) {
+             return s_session_db[i];
+         }
+     }
+     return NULL;
+ }
+
+static
 void mqtt_eventCallback(MQTTContext_t *pContext, MQTTPacketInfo_t *pPacketInfo, MQTTDeserializedInfo_t *pDeserializedInfo)
 {
+    adp_mqtt_session_t * session_id = mqtt_find_session(pContext->transportInterface.pNetworkContext->socket);
+    if (!session_id) {
+        adp_log_e("Internal bug: MQTT session unknown");
+        return;
+    }
+
     if (pPacketInfo->type == MQTT_PACKET_TYPE_SUBACK) {
         adp_mqtt_cmd_status_t  result;
         result.command    = ADP_MQTT_DO_SUBSCRIBE;
-        result.session_id = 0;// FIXME set valid session id
+        result.session_id = session_id;
         result.status     = ADP_RESULT_SUCCESS;
         result.subcode    = 0;
         adp_topic_publish(ADP_TOPIC_MQTT_CMD_STATUS, &result, sizeof(adp_mqtt_cmd_status_t), ADP_TOPIC_PRIORITY_HIGH);
@@ -55,19 +73,20 @@ void mqtt_eventCallback(MQTTContext_t *pContext, MQTTPacketInfo_t *pPacketInfo, 
         adp_log_e("Deserialization error [%s]", MQTT_Status_strerror(pDeserializedInfo->deserializationResult));
         return;
     }
+    size_t recv_topic_name_size = pDeserializedInfo->pPublishInfo->topicNameLength;
+    size_t recv_payload_size    = pDeserializedInfo->pPublishInfo->payloadLength;
+    size_t event_size = sizeof(adp_mqtt_received_topic_t) + recv_topic_name_size + recv_payload_size + 2;
 
-    size_t event_size = sizeof(adp_mqtt_received_topic_t) + pDeserializedInfo->pPublishInfo->topicNameLength + pDeserializedInfo->pPublishInfo->payloadLength;
     adp_mqtt_received_topic_t *topic = adp_os_malloc(event_size);
     ADP_ASSERT(topic, "Unable to store incoming data");
     memset(topic, 0x00, event_size);
 
-    topic->session_id      = pContext;
-    topic->topic_name_size = pDeserializedInfo->pPublishInfo->topicNameLength;
-    topic->payload_size    = pDeserializedInfo->pPublishInfo->payloadLength;
-    topic->topic_name      = (char*)(topic + sizeof(adp_mqtt_received_topic_t));
-    topic->payload         = (uint8_t*)(topic + sizeof(adp_mqtt_received_topic_t) + topic->topic_name_size);
-    memcpy(topic + sizeof(adp_mqtt_received_topic_t), pDeserializedInfo->pPublishInfo->pTopicName, topic->topic_name_size);
-    memcpy(topic + sizeof(adp_mqtt_received_topic_t) + topic->topic_name_size, pDeserializedInfo->pPublishInfo->pPayload, topic->payload_size);
+    topic->session_id      = session_id;
+    topic->topic_name_size = recv_topic_name_size + 1; // Null terminator
+    topic->payload_size    = recv_payload_size;        // Null terminator is present for redundancy but not included in size
+
+    memcpy(&topic->buffer[0],                        pDeserializedInfo->pPublishInfo->pTopicName, recv_topic_name_size);
+    memcpy(&topic->buffer[recv_topic_name_size + 1], pDeserializedInfo->pPublishInfo->pPayload,   recv_payload_size);
 
     adp_topic_publish(ADP_TOPIC_MQTT_INCOMING_TOPIC, topic, event_size, ADP_TOPIC_PRIORITY_HIGH);
     adp_os_free(topic);
@@ -220,7 +239,7 @@ adp_result_t mqtt_do_subscribe(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_t* cm
         session->subscribe_info[i].qos               = subscribe->filters[i].QoS;
     }
 
-    MQTTStatus_t core_mqtt_status= MQTT_Subscribe(&session->context,
+    MQTTStatus_t core_mqtt_status = MQTT_Subscribe(&session->context,
                                                   session->subscribe_info,
                                                   subscribe->number_of_filters,
                                                   packetId);
@@ -239,18 +258,55 @@ adp_result_t mqtt_do_subscribe(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_t* cm
 }
 
 
+adp_result_t mqtt_do_disconnect(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_t* cmd_data)
+{
+    adp_mqtt_cmd_subscribe_t *subscribe = (adp_mqtt_cmd_subscribe_t*)&cmd_data->subscribe;
+    adp_mqtt_session_t         *session = (adp_mqtt_session_t*)cmd_data->session_id;
+
+
+    MQTTStatus_t core_mqtt_status = MQTT_Disconnect(&session->context);
+
+    result->session_id = session;
+    result->subcode    = core_mqtt_status;
+
+    if( core_mqtt_status != MQTTSuccess ) {
+        adp_log_d("MQTT disconnect result is %d [%s]", core_mqtt_status, MQTT_Status_strerror(core_mqtt_status));
+        result->status = ADP_RESULT_FAILED;
+    } else {
+        result->status = ADP_RESULT_SUCCESS;
+    }
+
+    return result->status;
+}
+
+
 int mqtt_socket_recv(uint32_t topic_id, void* data, uint32_t len)
 {
     void **socket = data;
+    adp_mqtt_session_t *session_id = mqtt_find_session(*socket);
 
-    for (int i = 0; i < ADP_MQTT_SESSIONS_MAX_NUMBER; i++) {
-        if (!s_session_db[i])
-            continue;
-        if (s_session_db[i]->context.transportInterface.pNetworkContext->socket == *socket) {
-            adp_log_e("MQTT processing sessionId 0x%x", s_session_db[i]);
-            MQTT_ProcessLoop(&s_session_db[i]->context, 1);
-            break;
-        }
+    if (!session_id) {
+        // Not MQTT related socket is disconnected -> do nothing
+        return ADP_RESULT_SUCCESS;
+    }
+
+    // Notify users on disconnection if SOCKET closed
+    if (topic_id == ADP_TOPIC_IPNET_SOCKET_DISCONNECTED) {
+        adp_mqtt_cmd_t cmd = {
+                .command    = ADP_MQTT_DO_DISCONNECT,
+                .session_id = session_id,
+        };
+        adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &cmd, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_HIGH);
+        return ADP_RESULT_SUCCESS;
+    }
+
+    // RX or TX happened
+    if (topic_id == ADP_TOPIC_IPNET_SOCKET_RXTX_ACTIVITY) {
+        adp_mqtt_cmd_t cmd = {
+                .command    = ADP_MQTT_DO_PROCESS_LOOP,
+                .session_id = session_id,
+        };
+        adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &cmd, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_HIGH);
     }
 
     return ADP_RESULT_SUCCESS;
@@ -273,9 +329,24 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
     case ADP_MQTT_DO_SUBSCRIBE:
         {
             adp_log_d("MQTT - DO_SUBSCRIBE");
-            mqtt_do_subscribe(&result, (adp_mqtt_cmd_t*)data);
-            // Do not notify user, because ACK should be received and only then we notify the user
+            if (ADP_RESULT_SUCCESS == mqtt_do_subscribe(&result, (adp_mqtt_cmd_t*)data)) {
+                // Do not notify user, because ACK should be received and only then we notify the user
+                return ADP_RESULT_SUCCESS;
+            }
+        }
+        break;
+    case ADP_MQTT_DO_PROCESS_LOOP:
+        {
+            adp_log_d("MQTT - DO_PROCESS_LOOP");
+            adp_mqtt_session_t* session_id = cmd->session_id;
+            MQTT_ProcessLoop(&session_id->context, 100);
             return ADP_RESULT_SUCCESS;
+        }
+        break;
+    case ADP_MQTT_DO_DISCONNECT:
+        {
+            adp_log_d("MQTT - DO_DISCONNECT");
+            mqtt_do_disconnect(&result, (adp_mqtt_cmd_t*)data);
         }
         break;
     default:
@@ -296,13 +367,15 @@ adp_result_t adp_mqtt_initialize(adp_dispatcher_handle_t dispatcher)
     memset(s_session_db, 0x00, sizeof(s_session_db));
 
     // Register topics);
+    adp_topic_register(dispatcher, ADP_TOPIC_MQTT_SESSION_STATUS,   "MQTT.Status");
     adp_topic_register(dispatcher, ADP_TOPIC_MQTT_CMD_STATUS,       "MQTT.CmdStatus");
     adp_topic_register(dispatcher, ADP_TOPIC_MQTT_EXECUTE_CMD,      "MQTT.ExecuteCmd");
     adp_topic_register(dispatcher, ADP_TOPIC_MQTT_INCOMING_TOPIC,   "MQTT.IncomingTopic");
 
-    // Subscribe for commands
-    adp_topic_subscribe(ADP_TOPIC_MQTT_EXECUTE_CMD,      &mqtt_cmd_handler, "ADP.MQTT.SVC.Executor");
-    adp_topic_subscribe(ADP_TOPIC_IPNET_SOCKET_ACTIVITY, &mqtt_socket_recv, "ADP.MQTT.SVC.MonitorIO");
+    // Subscribe for topics
+    adp_topic_subscribe(ADP_TOPIC_MQTT_EXECUTE_CMD,           &mqtt_cmd_handler, "ADP.MQTT.SVC.Executor");
+    adp_topic_subscribe(ADP_TOPIC_IPNET_SOCKET_RXTX_ACTIVITY, &mqtt_socket_recv, "ADP.MQTT.SVC.MonitorIO");
+    adp_topic_subscribe(ADP_TOPIC_IPNET_SOCKET_DISCONNECTED,  &mqtt_socket_recv, "ADP.MQTT.SVC.MonitorIO");
 
     return ADP_RESULT_SUCCESS;
 }
