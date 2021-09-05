@@ -286,7 +286,7 @@ adp_result_t adp_ipnet_initialize(adp_dispatcher_handle_t dispatcher)
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_EXECUTE_CMD,     "IPNET.ExecuteCmd");
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_CMD_STATUS,      "IPNET.CmdStatus");
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_SOCKET_RXTX_ACTIVITY, "IPNET.SocketIOActivity");
-    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_SOCKET_DISCONNECTED, "IPNET.SocketIODisconnect");
+    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_SOCKET_DISCONNECTED,  "IPNET.SocketIODisconnect");
     adp_topic_subscribe(ADP_TOPIC_IPNET_EXECUTE_CMD, &ipnet_cmd_handler, "ADP.IPNET.SVC.Executor");
 
     /*

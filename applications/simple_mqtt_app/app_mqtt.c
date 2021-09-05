@@ -155,12 +155,6 @@ int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
 // Handling: MQTT session
 int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
 {
-    if (topic_id == ADP_TOPIC_MQTT_SESSION_STATUS) {
-        // Disconnect event happened
-        adp_log("MQTT ADP_TOPIC_MQTT_SESSION_STATUS received");
-        return ADP_RESULT_SUCCESS;
-    }
-
     adp_mqtt_cmd_status_t *cmd_status = (adp_mqtt_cmd_status_t*)data;
     adp_log("Status: MQTT cmd #%d executed with result %s (subcode: %d sessionId 0x%x)",
             cmd_status->command,
@@ -193,7 +187,12 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
         break;
     case ADP_MQTT_DO_DISCONNECT:
         {
-             adp_log("MQTT SUCCESFULLY DISCONNECTED - DO WE WANT TO TRY AGAIN?");
+             adp_log("MQTT SUCCESFULLY DISCONNECTED - DO WE WANT TO TRY AGAIN? In 1 second...");
+             adp_mqtt_session_free(s_mqtt_session);
+             adp_ipnet_socket_free(s_tcp_socket_mosquitto);
+             s_mqtt_session = NULL;
+             s_tcp_socket_mosquitto = NULL;
+             adp_os_sleep(1000);
              do_tcp_connect();
         }
         break;

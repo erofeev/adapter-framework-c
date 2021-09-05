@@ -367,7 +367,6 @@ adp_result_t adp_mqtt_initialize(adp_dispatcher_handle_t dispatcher)
     memset(s_session_db, 0x00, sizeof(s_session_db));
 
     // Register topics);
-    adp_topic_register(dispatcher, ADP_TOPIC_MQTT_SESSION_STATUS,   "MQTT.Status");
     adp_topic_register(dispatcher, ADP_TOPIC_MQTT_CMD_STATUS,       "MQTT.CmdStatus");
     adp_topic_register(dispatcher, ADP_TOPIC_MQTT_EXECUTE_CMD,      "MQTT.ExecuteCmd");
     adp_topic_register(dispatcher, ADP_TOPIC_MQTT_INCOMING_TOPIC,   "MQTT.IncomingTopic");
