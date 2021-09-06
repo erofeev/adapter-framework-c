@@ -22,7 +22,7 @@ typedef enum {
 
 // The content of ADP_TOPIC_MQTT_STATUS
 typedef struct {
-    void                           *user_id;
+    void                          *user_ctx;
     adp_mqtt_command_code_t         command;
     uint32_t                         status;
     uint32_t                        subcode;
@@ -52,7 +52,7 @@ typedef struct {
 
 // The content of ADP_TOPIC_MQTT_EXECUTE_CMD
 typedef struct {
-    void                           *user_id;
+    void                          *user_ctx;
     adp_mqtt_command_code_t         command;
     union {
         adp_mqtt_cmd_connect_t      connect;
@@ -62,7 +62,7 @@ typedef struct {
 
 // The content of ADP_TOPIC_MQTT_INCOMING_TOPIC
 typedef struct {
-    void                           *user_id;
+    void                          *user_ctx;
     void                           *session;
     size_t                  topic_name_size;
     size_t                     payload_size;

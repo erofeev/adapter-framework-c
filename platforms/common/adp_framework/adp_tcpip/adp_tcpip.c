@@ -22,6 +22,15 @@
  #define adp_log_d(...)
 #endif
 
+typedef struct {
+    void               *user_ctx;
+    adp_socket_t          socket;
+} adp_ipnet_session_t;
+
+adp_ipnet_session_t   s_socket_db[ADP_IPNET_SOCKETS_MAX_NUMBER] = {0};
+adp_os_mutex_t        s_socket_list_mutex = NULL;
+
+
 /* The default IP and MAC address.  The address configuration
  * defined here will be used if ipconfigUSE_DHCP is 0, or if ipconfigUSE_DHCP is
  * 1 but a DHCP server could not be contacted.  See the online documentation for
@@ -57,7 +66,7 @@ uint32_t ulApplicationGetNextSequenceNumber( uint32_t ulSourceAddress,
 
 const char* pcApplicationHostnameHook(void)
 {
-    return ADP_NET_HOSTNAME;
+    return ADP_IPNET_HOSTNAME;
 }
 
 
@@ -132,6 +141,67 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
     adp_topic_publish(ADP_TOPIC_IPNET_IPSTATUS, &event_data, sizeof(event_data), ADP_TOPIC_PRIORITY_HIGH);
 }
 
+static
+adp_result_t ipnet_add_socket(void *user_ctx, adp_socket_t socket)
+{
+    adp_os_mutex_take(s_socket_list_mutex);
+
+    for (int i = 0; i < ADP_IPNET_SOCKETS_MAX_NUMBER; i++) {
+        if (!s_socket_db[i].socket)
+            continue;
+        if ( (s_socket_db[i].user_ctx == user_ctx) ||
+             (s_socket_db[i].socket   == socket  ) ) {
+            adp_os_mutex_give(s_socket_list_mutex);
+            return ADP_RESULT_INVALID_PARAMETER;
+        }
+    }
+    for (int i = 0; i < ADP_IPNET_SOCKETS_MAX_NUMBER; i++) {
+        if (s_socket_db[i].socket == NULL) {
+            s_socket_db[i].socket   = socket;
+            s_socket_db[i].user_ctx = user_ctx;
+            adp_os_mutex_give(s_socket_list_mutex);
+            adp_log_d("New socket added to the list");
+            return ADP_RESULT_SUCCESS;
+        }
+    }
+    adp_os_mutex_give(s_socket_list_mutex);
+    adp_log_e("Cannot add new socket to the list");
+    return ADP_RESULT_NO_SPACE_LEFT;
+}
+
+static
+adp_socket_t* ipnet_find_socket_by_user_ctx(void *user_ctx)
+{
+    adp_os_mutex_take(s_socket_list_mutex);
+    for (int i = 0; i < ADP_IPNET_SOCKETS_MAX_NUMBER; i++) {
+        if (s_socket_db[i].user_ctx == user_ctx) {
+            adp_os_mutex_give(s_socket_list_mutex);
+            return s_socket_db[i].socket;
+        }
+    }
+    adp_os_mutex_give(s_socket_list_mutex);
+    adp_log_e("Socket not in the list");
+    return NULL;
+}
+
+static
+void ipnet_del_socket(adp_socket_t *socket)
+{
+    adp_os_mutex_take(s_socket_list_mutex);
+    for (int i = 0; i < ADP_IPNET_SOCKETS_MAX_NUMBER; i++) {
+        if (s_socket_db[i].socket == socket) {
+            s_socket_db[i].socket   = NULL;
+            s_socket_db[i].user_ctx = NULL;
+            adp_log_d("Socket removed from the list");
+            adp_os_mutex_give(s_socket_list_mutex);
+            return;
+        }
+    }
+    adp_os_mutex_give(s_socket_list_mutex);
+    adp_log_e("Socket not in the list");
+    return;
+}
+
 adp_socket_t adp_ipnet_socket_alloc(adp_socket_option_t option)
 {
     Socket_t xSocket = FREERTOS_INVALID_SOCKET;
@@ -151,13 +221,16 @@ adp_socket_t adp_ipnet_socket_alloc(adp_socket_option_t option)
     return (adp_socket_t)xSocket;
 }
 
+
 void adp_ipnet_socket_free(adp_socket_t socket)
 {
     if (socket) {
+        ipnet_del_socket(socket);
         FreeRTOS_shutdown(socket, 0/* not used */);
         FreeRTOS_closesocket(socket);
     }
 }
+
 
 uint32_t adp_ipnet_socket_send(adp_socket_t socket, void *buffer, int bytesToSend)
 {
@@ -210,6 +283,18 @@ adp_result_t ipnet_do_tcp_connect(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_
     adp_ipnet_cmd_connect_t *connect = (adp_ipnet_cmd_connect_t*)&cmd_data->connect;
     struct freertos_sockaddr xRemoteAddress;
 
+    if (!connect) {
+        result->status  = ADP_RESULT_FAILED;
+        return ADP_RESULT_FAILED;
+    }
+
+    // Create socket
+    xSocket = adp_ipnet_socket_alloc(ADP_SOCKET_TCP);
+    if (!xSocket) {
+        result->status  = ADP_RESULT_FAILED;
+        return ADP_RESULT_FAILED;
+    }
+
     if (connect->hostname) {
         hostname = connect->hostname;
         adp_log_d("DNS search for %s", hostname);
@@ -221,14 +306,13 @@ adp_result_t ipnet_do_tcp_connect(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_
     adp_log_d("Trying to connect to %s:%d [%s]", addr_str, connect->port, hostname);
     xRemoteAddress.sin_addr = ipaddr;
     xRemoteAddress.sin_port = FreeRTOS_htons(connect->port);
-    xSocket = cmd_data->socket;
-    result->socket = xSocket;
 
     BaseType_t status = FreeRTOS_connect(xSocket, &xRemoteAddress, sizeof(xRemoteAddress));
     if (status != pdFREERTOS_ERRNO_NONE) {
         // Failed to connect to the server
         result->status  = ADP_RESULT_FAILED;
         result->subcode = status;
+        adp_ipnet_socket_free(xSocket);
         return ADP_RESULT_FAILED;
     }
 
@@ -238,17 +322,33 @@ adp_result_t ipnet_do_tcp_connect(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_
                                   FREERTOS_SO_WAKEUP_CALLBACK,
                                   (void*)ipnet_client_socket_wakeup_cb,
                                   sizeof(&(ipnet_client_socket_wakeup_cb)));
-    if (status != pdFREERTOS_ERRNO_NONE) {
+    if ( (status != pdFREERTOS_ERRNO_NONE) || (ADP_RESULT_SUCCESS != ipnet_add_socket(cmd_data->user_ctx, xSocket)) ) {
         // Failed to connect to the server
         result->status  = ADP_RESULT_FAILED;
         result->subcode = status;
+        adp_ipnet_socket_free(xSocket);
         return ADP_RESULT_FAILED;
+    }
+
+    result->socket = xSocket;
+    result->status = ADP_RESULT_SUCCESS;
+
+    return ADP_RESULT_SUCCESS;
+}
+
+
+adp_result_t ipnet_do_tcp_shutdown(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_t* cmd_data)
+{
+    adp_socket_t socket = ipnet_find_socket_by_user_ctx(cmd_data->user_ctx);
+    if (socket) {
+        adp_ipnet_socket_free(socket);
     }
 
     result->status = ADP_RESULT_SUCCESS;
 
     return ADP_RESULT_SUCCESS;
 }
+
 
 int ipnet_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 {
@@ -257,13 +357,20 @@ int ipnet_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 
     memset(&result, 0x00, sizeof(adp_ipnet_cmd_status_t));
 
-    result.command = cmd->command;
+    result.user_ctx = cmd->user_ctx;
+    result.command  = cmd->command;
 
     switch (cmd->command) {
     case ADP_IPNET_DO_TCP_CONNECT:
         {
             adp_log_d("IPNET - DO_TCP_CONNECT");
             ipnet_do_tcp_connect(&result, (adp_ipnet_cmd_t*)data);
+        }
+        break;
+    case ADP_IPNET_DO_TCP_SHUTDOWN:
+        {
+            adp_log_d("IPNET - DO_TCP_SHUTDOWN");
+            ipnet_do_tcp_shutdown(&result, (adp_ipnet_cmd_t*)data);
         }
         break;
     default:
@@ -281,12 +388,17 @@ int ipnet_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 
 adp_result_t adp_ipnet_initialize(adp_dispatcher_handle_t dispatcher)
 {
-    // Register topics
+    memset(s_socket_db, 0x00, sizeof(s_socket_db));
+    s_socket_list_mutex = adp_os_mutex_create();
+
+    // Published topics
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_IPSTATUS,        "IPNET.Status");
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_EXECUTE_CMD,     "IPNET.ExecuteCmd");
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_CMD_STATUS,      "IPNET.CmdStatus");
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_SOCKET_RXTX_ACTIVITY, "IPNET.SocketIOActivity");
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_SOCKET_DISCONNECTED,  "IPNET.SocketIODisconnect");
+
+    // Subscribed for topics
     adp_topic_subscribe(ADP_TOPIC_IPNET_EXECUTE_CMD, &ipnet_cmd_handler, "ADP.IPNET.SVC.Executor");
 
     /*

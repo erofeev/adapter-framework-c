@@ -24,7 +24,8 @@
 
 // APP Network settings
 #undef ADP_TCPIP_MODULE_NO_DEBUG
-#define ADP_NET_HOSTNAME                             "AdpHostName"
+#define ADP_IPNET_HOSTNAME                             "AdpHostName"
+#define ADP_IPNET_SOCKETS_MAX_NUMBER                 10
 
 // APP MQTT settings
 #undef ADP_MQTT_MODULE_NO_DEBUG

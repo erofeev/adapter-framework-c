@@ -22,39 +22,47 @@
  #define adp_log_d(...)
 #endif
 
+
 typedef struct NetworkContext {
-     void* socket;
-     void* tlsContext;
+     void                        *socket;
+     void                    *tlsContext;
  } adp_network_context_t;
 
 typedef struct adp_mqtt_session_s {
-    void                       *user_id;
-    MQTTContext_t               context;
-    MQTTConnectInfo_t      connect_info;
-    MQTTSubscribeInfo_t *subscribe_info;
+    void                       *user_ctx;
+    MQTTContext_t                context;
+    MQTTConnectInfo_t       connect_info;
+    MQTTSubscribeInfo_t  *subscribe_info;
 } adp_mqtt_session_t;
 
 
 adp_mqtt_session_t *s_session_db[ADP_MQTT_SESSIONS_MAX_NUMBER] = {0};
+adp_os_mutex_t      s_session_list_mutex = NULL;
+
 
 static
 adp_result_t mqtt_add_session(adp_mqtt_session_t *session)
 {
+    adp_os_mutex_take(s_session_list_mutex);
+
     for (int i = 0; i < ADP_MQTT_SESSIONS_MAX_NUMBER; i++) {
         if (!s_session_db[i])
             continue;
-        if ( (s_session_db[i]->user_id == session->user_id) ||
+        if ( (s_session_db[i]->user_ctx == session->user_ctx) ||
              (s_session_db[i]->context.transportInterface.pNetworkContext->socket == session->context.transportInterface.pNetworkContext->socket) ) {
-             return ADP_RESULT_INVALID_PARAMETER;
+            adp_os_mutex_give(s_session_list_mutex);
+            return ADP_RESULT_INVALID_PARAMETER;
         }
     }
     for (int i = 0; i < ADP_MQTT_SESSIONS_MAX_NUMBER; i++) {
         if (s_session_db[i] == NULL) {
             s_session_db[i] = session;
+            adp_os_mutex_give(s_session_list_mutex);
             adp_log_d("New MQTT session added to the list");
             return ADP_RESULT_SUCCESS;
         }
     }
+    adp_os_mutex_give(s_session_list_mutex);
     adp_log_e("Cannot add new session to the list");
     return ADP_RESULT_NO_SPACE_LEFT;
 }
@@ -62,13 +70,16 @@ adp_result_t mqtt_add_session(adp_mqtt_session_t *session)
 static
 adp_mqtt_session_t* mqtt_find_session_by_socket(void *socket)
 {
+    adp_os_mutex_take(s_session_list_mutex);
     for (int i = 0; i < ADP_MQTT_SESSIONS_MAX_NUMBER; i++) {
         if (!s_session_db[i])
             continue;
         if (s_session_db[i]->context.transportInterface.pNetworkContext->socket == socket) {
+            adp_os_mutex_give(s_session_list_mutex);
             return s_session_db[i];
         }
     }
+    adp_os_mutex_give(s_session_list_mutex);
     adp_log_e("Session not in the list");
     return NULL;
 }
@@ -76,27 +87,35 @@ adp_mqtt_session_t* mqtt_find_session_by_socket(void *socket)
 static
 adp_mqtt_session_t* mqtt_find_userid_by_socket(void *socket, void **userid)
 {
+    adp_os_mutex_take(s_session_list_mutex);
     for (int i = 0; i < ADP_MQTT_SESSIONS_MAX_NUMBER; i++) {
         if (!s_session_db[i])
             continue;
         if (s_session_db[i]->context.transportInterface.pNetworkContext->socket == socket) {
-            *userid = s_session_db[i]->user_id;
+            *userid = s_session_db[i]->user_ctx;
+            adp_os_mutex_give(s_session_list_mutex);
             return s_session_db[i];
         }
     }
-    adp_log_e("Session not in the list");
     *userid = NULL;
+    adp_os_mutex_give(s_session_list_mutex);
+    adp_log_e("Session not in the list");
     return NULL;
 }
 
 static
-adp_mqtt_session_t* mqtt_find_session_by_user_id(void *user_id)
+adp_mqtt_session_t* mqtt_find_session_by_user_ctx(void *user_ctx)
 {
+    adp_os_mutex_take(s_session_list_mutex);
     for (int i = 0; i < ADP_MQTT_SESSIONS_MAX_NUMBER; i++) {
-        if (s_session_db[i]->user_id == user_id) {
+        if (!s_session_db[i])
+            continue;
+        if (s_session_db[i]->user_ctx == user_ctx) {
+            adp_os_mutex_give(s_session_list_mutex);
             return s_session_db[i];
         }
     }
+    adp_os_mutex_give(s_session_list_mutex);
     adp_log_e("Session not in the list");
     return NULL;
 }
@@ -104,13 +123,16 @@ adp_mqtt_session_t* mqtt_find_session_by_user_id(void *user_id)
 static
 void mqtt_del_session(adp_mqtt_session_t* session)
 {
+    adp_os_mutex_take(s_session_list_mutex);
     for (int i = 0; i < ADP_MQTT_SESSIONS_MAX_NUMBER; i++) {
         if (s_session_db[i] == session) {
             s_session_db[i] = NULL;
+            adp_os_mutex_give(s_session_list_mutex);
             adp_log_d("MQTT session is not operational any more");
             return;
         }
     }
+    adp_os_mutex_give(s_session_list_mutex);
     adp_log_e("Session not in the list");
     return;
 }
@@ -144,7 +166,7 @@ void mqtt_eventCallback(MQTTContext_t *pContext, MQTTPacketInfo_t *pPacketInfo, 
     if (pPacketInfo->type == MQTT_PACKET_TYPE_SUBACK) {
         adp_mqtt_cmd_status_t  result;
         result.command    = ADP_MQTT_DO_SUBSCRIBE;
-        result.user_id    = session->user_id;
+        result.user_ctx    = session->user_ctx;
         result.status     = ADP_RESULT_SUCCESS;
         result.subcode    = 0;
         adp_topic_publish(ADP_TOPIC_MQTT_CMD_STATUS, &result, sizeof(adp_mqtt_cmd_status_t), ADP_TOPIC_PRIORITY_HIGH);
@@ -183,7 +205,7 @@ void mqtt_eventCallback(MQTTContext_t *pContext, MQTTPacketInfo_t *pPacketInfo, 
 static
 void adp_mqtt_session_free(adp_mqtt_session_t* session)
 {
-    // Deactivate session (the session will not be able to receive any packets from the net
+    // Deactivate session (the session will become non-operational)
     mqtt_del_session(session);
 
     // Clean up resources
@@ -194,7 +216,7 @@ void adp_mqtt_session_free(adp_mqtt_session_t* session)
 }
 
 static
-adp_mqtt_session_t* adp_mqtt_session_alloc(void* user_id, void* socket)
+adp_mqtt_session_t* adp_mqtt_session_alloc(void* user_ctx, void* socket)
 {
     adp_mqtt_session_t *session;
 
@@ -202,7 +224,7 @@ adp_mqtt_session_t* adp_mqtt_session_alloc(void* user_id, void* socket)
     ADP_ASSERT(session, "Unable to allocate memory for MQTT session");
     memset(session, 0x00, sizeof(adp_mqtt_session_t));
 
-    session->user_id = user_id;
+    session->user_ctx = user_ctx;
 
     // Set transport buffer
     MQTTFixedBuffer_t    data_buffer;
@@ -238,7 +260,7 @@ adp_result_t mqtt_do_broker_connect(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_
 {
     bool sessionPresent;
     adp_mqtt_cmd_connect_t *connect = (adp_mqtt_cmd_connect_t*)&cmd_data->connect;
-    adp_mqtt_session_t     *session = adp_mqtt_session_alloc(cmd_data->user_id, connect->socket);
+    adp_mqtt_session_t     *session = adp_mqtt_session_alloc(cmd_data->user_ctx, connect->socket);
 
     if (!session) {
         result->status = ADP_RESULT_MALLOC_FAILED;
@@ -282,7 +304,7 @@ adp_result_t mqtt_do_broker_connect(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_
 adp_result_t mqtt_do_subscribe(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_t* cmd_data)
 {
     adp_mqtt_cmd_subscribe_t *subscribe = (adp_mqtt_cmd_subscribe_t*)&cmd_data->subscribe;
-    adp_mqtt_session_t         *session = mqtt_find_session_by_user_id(cmd_data->user_id);
+    adp_mqtt_session_t         *session = mqtt_find_session_by_user_ctx(cmd_data->user_ctx);
 
     if (!session) {
         result->status = ADP_RESULT_FAILED;
@@ -320,7 +342,7 @@ adp_result_t mqtt_do_subscribe(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_t* cm
 
 adp_result_t mqtt_do_disconnect(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_t* cmd_data)
 {
-    adp_mqtt_session_t *session = mqtt_find_session_by_user_id(cmd_data->user_id);
+    adp_mqtt_session_t *session = mqtt_find_session_by_user_ctx(cmd_data->user_ctx);
     if (!session) {
         return ADP_RESULT_FAILED;
     }
@@ -344,10 +366,10 @@ adp_result_t mqtt_do_disconnect(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_t* c
 int mqtt_socket_monitor_io(uint32_t topic_id, void* data, uint32_t len)
 {
     void **socket = data;
-    void *user_id = NULL;
-    adp_mqtt_session_t *session = mqtt_find_userid_by_socket(*socket, &user_id);
+    void *user_ctx = NULL;
+    adp_mqtt_session_t *session = mqtt_find_userid_by_socket(*socket, &user_ctx);
 
-    if ( (!session) || (!user_id) ){
+    if ( (!session) || (!user_ctx) ){
         adp_log_d("Socket does not belong to MQTT session, topic 0x%x on socket 0x%x", topic_id, *socket);
         return ADP_RESULT_SUCCESS;
     }
@@ -356,7 +378,7 @@ int mqtt_socket_monitor_io(uint32_t topic_id, void* data, uint32_t len)
     if (topic_id == ADP_TOPIC_IPNET_SOCKET_DISCONNECTED) {
         adp_mqtt_cmd_t cmd = {
                 .command    = ADP_MQTT_DO_DISCONNECT,
-                .user_id    = user_id,
+                .user_ctx    = user_ctx,
         };
         adp_log_d("Disconnect received from IPNET");
         adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &cmd, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_HIGH);
@@ -367,7 +389,7 @@ int mqtt_socket_monitor_io(uint32_t topic_id, void* data, uint32_t len)
     if (topic_id == ADP_TOPIC_IPNET_SOCKET_RXTX_ACTIVITY) {
         adp_mqtt_cmd_t cmd = {
                 .command    = ADP_MQTT_DO_PROCESS_LOOP,
-                .user_id    = user_id,
+                .user_ctx    = user_ctx,
         };
         adp_log_d("RX/TX activity received from IPNET");
         adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &cmd, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_HIGH);
@@ -382,7 +404,7 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
     adp_mqtt_cmd_status_t  result;
 
     result.command = cmd->command;
-    result.user_id = cmd->user_id;
+    result.user_ctx = cmd->user_ctx;
 
     switch (cmd->command) {
     case ADP_MQTT_DO_CONNECT:
@@ -402,7 +424,7 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
         break;
     case ADP_MQTT_DO_PROCESS_LOOP:
         {
-            adp_mqtt_session_t* session = mqtt_find_session_by_user_id(cmd->user_id);
+            adp_mqtt_session_t* session = mqtt_find_session_by_user_ctx(cmd->user_ctx);
             if (!session) {
                 return ADP_RESULT_SUCCESS;
             }
@@ -437,8 +459,9 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 adp_result_t adp_mqtt_initialize(adp_dispatcher_handle_t dispatcher)
 {
     memset(s_session_db, 0x00, sizeof(s_session_db));
+    s_session_list_mutex = adp_os_mutex_create();
 
-    // Register topics);
+    // Published topics
     adp_topic_register(dispatcher, ADP_TOPIC_MQTT_CMD_STATUS,       "MQTT.CmdStatus");
     adp_topic_register(dispatcher, ADP_TOPIC_MQTT_EXECUTE_CMD,      "MQTT.ExecuteCmd");
     adp_topic_register(dispatcher, ADP_TOPIC_MQTT_INCOMING_TOPIC,   "MQTT.IncomingTopic");

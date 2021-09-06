@@ -11,6 +11,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "semphr.h"
 
 #include "adp_osal.h"
 #include "adp_logging.h"
@@ -182,6 +183,24 @@ void adp_os_abnormal_stop(void)
     while(1);
 #endif
 }
+
+adp_os_mutex_t adp_os_mutex_create(void)
+{
+    adp_os_mutex_t mutex = (adp_os_mutex_t)xSemaphoreCreateMutex();
+    ADP_ASSERT(mutex, "Unable to create mutex");
+    return mutex;
+}
+
+void adp_os_mutex_take(adp_os_mutex_t mutex)
+{
+    xSemaphoreTake((SemaphoreHandle_t)mutex, portMAX_DELAY);
+}
+
+void adp_os_mutex_give(adp_os_mutex_t mutex)
+{
+    xSemaphoreGive((SemaphoreHandle_t)mutex);
+}
+
 
 adp_result_t adp_os_start_task(const char* task_name, adp_os_start_task_t task_body, uint32_t stack_size, uint32_t task_prio, void* user_data)
 {

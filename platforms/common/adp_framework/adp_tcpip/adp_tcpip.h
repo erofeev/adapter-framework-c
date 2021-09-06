@@ -22,32 +22,34 @@ typedef enum {
 
 typedef enum {
     ADP_IPNET_DO_TCP_CONNECT      = 0x00000001,
+    ADP_IPNET_DO_TCP_SHUTDOWN     = 0x00000002,
 } adp_ipnet_command_code_t;
 
 typedef void* adp_socket_t;
 
 // The content of ADP_TOPIC_IPNET_CMD_STATUS
 typedef struct {
-    adp_ipnet_command_code_t    command;
-    int32_t                      status;
-    int32_t                     subcode;
-    adp_socket_t                 socket;
+    void                        *user_ctx;
+    adp_ipnet_command_code_t     command;
+    int32_t                       status;
+    int32_t                      subcode;
+    adp_socket_t                  socket;
 } adp_ipnet_cmd_status_t;
 
 // The content of ADP_TOPIC_IPNET_EXECUTE_CMD - ADP_IPNET_DO_TCP_CONNECT
 typedef struct {
-    uint16_t                       port;
-    char                      *hostname;
-    uint8_t                   ip_octet1;
-    uint8_t                   ip_octet2;
-    uint8_t                   ip_octet3;
-    uint8_t                   ip_octet4;
+    uint16_t                        port;
+    char                       *hostname;
+    uint8_t                    ip_octet1;
+    uint8_t                    ip_octet2;
+    uint8_t                    ip_octet3;
+    uint8_t                    ip_octet4;
 } adp_ipnet_cmd_connect_t;
 
 // The content of ADP_TOPIC_IPNET_EXECUTE_CMD
 typedef struct {
+    void                        *user_ctx;
     adp_ipnet_command_code_t     command;
-    adp_socket_t                  socket;
     union {
         adp_ipnet_cmd_connect_t  connect;
     };

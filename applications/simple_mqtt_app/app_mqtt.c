@@ -12,8 +12,12 @@
 #include "adp_tcpip.h"
 #include "adp_mqtt.h"
 
-adp_socket_t        s_tcp_socket_mosquitto = NULL;
-void*               s_mqtt_id              = (void*)1;
+adp_socket_t        s_tcp_socket_mosquitto = (void*)"Socket for MQTT client 1";
+void*               s_mqtt_id              = (void*)"MQTT client 1";
+
+adp_socket_t        s_tcp_socket_mosquitto_2 = (void*)"Socket for MQTT client 2";
+void*               s_mqtt_id_2              = (void*)"MQTT client 2";
+
 adp_mqtt_topic_filter_t topics[] = {
         {
                 .QoS = 0,
@@ -26,29 +30,32 @@ adp_mqtt_topic_filter_t topics[] = {
 };
 
 
-static void do_tcp_connect()
+static void do_tcp_connect(char *tcp_connect_name)
 {
-    // Clean socket
-    if (!s_tcp_socket_mosquitto) {
-        // Create a new tcp socket and try to connect to the server
-        s_tcp_socket_mosquitto = adp_ipnet_socket_alloc(ADP_SOCKET_TCP);
-        ADP_ASSERT(s_tcp_socket_mosquitto, "Fatal problem: unable to create socket");
-    }
-    adp_log("Status: starting with socket - 0x%x", s_tcp_socket_mosquitto);
+    adp_log("Status: starting with socket [%s]", tcp_connect_name);
     adp_ipnet_cmd_t ipnet_connect = {
+               .user_ctx          = tcp_connect_name,
                .command           = ADP_IPNET_DO_TCP_CONNECT,
-               .socket            = s_tcp_socket_mosquitto,
                .connect.port      = 1883,
                .connect.hostname  = "test.mosquitto.org" } ;
     adp_topic_publish(ADP_TOPIC_IPNET_EXECUTE_CMD, &ipnet_connect, sizeof(adp_ipnet_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
 }
 
+static void do_tcp_shutdown(char *tcp_connect_name)
+{
+    adp_log("Status: closing socket [%s]", tcp_connect_name);
+    adp_ipnet_cmd_t ipnet_shutdown = {
+               .user_ctx          = tcp_connect_name,
+               .command           = ADP_IPNET_DO_TCP_SHUTDOWN } ;
+    adp_topic_publish(ADP_TOPIC_IPNET_EXECUTE_CMD, &ipnet_shutdown, sizeof(adp_ipnet_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
+}
 
-static void do_mqtt_connect(void *socket, int timeout_ms)
+
+static void do_mqtt_connect(void* user_ctx, void *socket, int timeout_ms)
 {
     // Connect to the broker
     adp_mqtt_cmd_t mqtt_connect = {
-            .user_id                         = (void*)s_mqtt_id,
+            .user_ctx                         = (void*)user_ctx,
             .command                         = ADP_MQTT_DO_CONNECT,
             .connect.socket                  = socket,
             .connect.clean_session           = 1,
@@ -61,11 +68,11 @@ static void do_mqtt_connect(void *socket, int timeout_ms)
     adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_connect, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
 }
 
-static void do_mqtt_subscribe()
+static void do_mqtt_subscribe(void* user_ctx)
 {
     // Connect to the broker
     adp_mqtt_cmd_t mqtt_subscribe = {
-            .user_id                        = (void*)s_mqtt_id,
+            .user_ctx                        = user_ctx,
             .command                         = ADP_MQTT_DO_SUBSCRIBE,
             .subscribe.number_of_filters     = sizeof(topics)/sizeof(adp_mqtt_topic_filter_t),
             .subscribe.filters               = topics,
@@ -73,10 +80,10 @@ static void do_mqtt_subscribe()
     adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_subscribe, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
 }
 
-static void do_mqtt_disconnect()
+static void do_mqtt_disconnect(void* user_ctx)
 {
     adp_mqtt_cmd_t mqtt_disconnect = {
-            .user_id    = (void*)s_mqtt_id,
+            .user_ctx   = user_ctx,
             .command    = ADP_MQTT_DO_DISCONNECT,
     };
     adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_disconnect, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
@@ -98,7 +105,8 @@ int app_net_status_handler(uint32_t topic_id, void* data, uint32_t len)
     case ADP_IPNET_STACK_UP:
         {
             // Create a tcp socket and try to connect to the server
-            do_tcp_connect();
+            do_tcp_connect(s_tcp_socket_mosquitto);
+       //     do_tcp_connect(s_tcp_socket_mosquitto_2);
         }
         break;
     case ADP_IPNET_STACK_DOWN:
@@ -118,14 +126,15 @@ int app_net_status_handler(uint32_t topic_id, void* data, uint32_t len)
 int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
 {
     adp_ipnet_cmd_status_t *cmd_status = (adp_ipnet_cmd_status_t*)data;
-    adp_log("Status: IPNET cmd #%d executed with result %s (subcode: %d socket is 0x%x)",
+    adp_log("Status: IPNET client [%s] cmd #%d executed with result %s (subcode: %d)",
+            cmd_status->user_ctx,
             cmd_status->command,
             (cmd_status->status == ADP_RESULT_SUCCESS) ? "SUCESS" : "FAILED",
             cmd_status->subcode,
             cmd_status->socket);
 
     // Process items related to our socket
-    if (cmd_status->socket != s_tcp_socket_mosquitto) {
+    if ( (cmd_status->user_ctx != s_tcp_socket_mosquitto) && (cmd_status->user_ctx != s_tcp_socket_mosquitto_2) ) {
         return ADP_RESULT_SUCCESS;
     }
 
@@ -134,11 +143,18 @@ int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
         {
             if (cmd_status->status == ADP_RESULT_SUCCESS) {
                 // Start establishing MQTT session
-                do_mqtt_connect(cmd_status->socket, 1000);
+                if (cmd_status->user_ctx == s_tcp_socket_mosquitto)
+                    do_mqtt_connect(s_mqtt_id, cmd_status->socket, 1000);
+                if (cmd_status->user_ctx == s_tcp_socket_mosquitto_2)
+                    do_mqtt_connect(s_mqtt_id_2, cmd_status->socket, 1000);
             } else {
-                // Create a tcp socket and try to connect to the server again
-                do_tcp_connect();
+                do_tcp_shutdown(cmd_status->user_ctx);
             }
+        }
+        break;
+    case ADP_IPNET_DO_TCP_SHUTDOWN:
+        {
+            do_tcp_connect(cmd_status->user_ctx);
         }
         break;
     default:
@@ -153,11 +169,11 @@ int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
 int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
 {
     adp_mqtt_cmd_status_t *cmd_status = (adp_mqtt_cmd_status_t*)data;
-    adp_log("Status: MQTT cmd #%d executed with result %s (subcode: %d userId 0x%x)",
+    adp_log("Status: MQTT client [%s] cmd #%d executed with result %s (subcode: %d)",
+            cmd_status->user_ctx,
             cmd_status->command,
             (cmd_status->status == ADP_RESULT_SUCCESS) ? "SUCESS" : "FAILED",
-            cmd_status->subcode,
-            cmd_status->user_id);
+            cmd_status->subcode);
 
     switch (cmd_status->command) {
     case ADP_MQTT_DO_CONNECT: // FIXME
@@ -165,30 +181,33 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
             if (cmd_status->status == ADP_RESULT_SUCCESS) {
                 adp_log("MQTT SUCCESFULLY CONNECTED");
                 // Subscribe for topics
-                do_mqtt_subscribe();
+                do_mqtt_subscribe(cmd_status->user_ctx);
             } else {
                 // Send DISCONNECT, let's try to clean up everything and try again
-                do_mqtt_disconnect();
+                do_mqtt_disconnect(cmd_status->user_ctx);
             }
         }
         break;
     case ADP_MQTT_DO_SUBSCRIBE:
         {
             if (cmd_status->status == ADP_RESULT_SUCCESS) {
+                adp_log("===========================");
                 adp_log("MQTT SUCCESFULLY SUBSCRIBED");
+                adp_log("===========================");
+                do_tcp_connect(s_tcp_socket_mosquitto_2);
             } else {
                 // Send DISCONNECT, let's try to clean up everything and try again
-                do_mqtt_disconnect();
+                do_mqtt_disconnect(cmd_status->user_ctx);
             }
         }
         break;
     case ADP_MQTT_DO_DISCONNECT:
         {
-             adp_log("MQTT SUCCESFULLY DISCONNECTED - DO WE WANT TO TRY AGAIN? In 1 second...");
-             adp_ipnet_socket_free(s_tcp_socket_mosquitto);
-             s_tcp_socket_mosquitto = NULL;
-             adp_os_sleep(1000);
-             do_tcp_connect();
+             adp_log("MQTT SUCCESFULLY DISCONNECTED - DO WE WANT TO TRY AGAIN?");
+             if (cmd_status->user_ctx == s_mqtt_id)
+                 do_tcp_shutdown(s_tcp_socket_mosquitto);
+             if (cmd_status->user_ctx == s_mqtt_id_2)
+                 do_tcp_shutdown(s_tcp_socket_mosquitto_2);
         }
         break;
     default:

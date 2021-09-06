@@ -26,6 +26,7 @@ typedef enum {
 
 typedef void (adp_os_start_task_t)(void* );
 typedef void* adp_os_queue_handle_t;
+typedef void* adp_os_mutex_t;
 
 
 // Task handling
@@ -54,6 +55,14 @@ int adp_os_get_free_heap_size(void);
 void *adp_os_malloc(uint32_t size);
 
 void adp_os_free(void* ptr);
+
+
+// Mutexes
+adp_os_mutex_t adp_os_mutex_create(void);
+
+void adp_os_mutex_take(adp_os_mutex_t mutex);
+
+void adp_os_mutex_give(adp_os_mutex_t mutex);
 
 
 // Queue management
