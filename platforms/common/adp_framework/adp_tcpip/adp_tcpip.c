@@ -85,19 +85,6 @@ BaseType_t xApplicationDNSQueryHook(const char *pcName)
 }
 
 
-static
-void ipnet_client_socket_wakeup_cb(adp_socket_t pxSocket)
-{
-    if (pdTRUE != FreeRTOS_issocketconnected(pxSocket)) {
-        adp_log_d("Disconnect on socket 0x%x", pxSocket);
-        adp_topic_publish(ADP_TOPIC_IPNET_SOCKET_DISCONNECTED, &pxSocket, sizeof(adp_socket_t), ADP_TOPIC_PRIORITY_HIGH);
-    } else {
-        adp_log_d("Detected activity on socket 0x%x", pxSocket);
-        adp_topic_publish(ADP_TOPIC_IPNET_SOCKET_RXTX_ACTIVITY, &pxSocket, sizeof(adp_socket_t), ADP_TOPIC_PRIORITY_HIGH);
-    }
-}
-
-
 void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
 {
     uint32_t ulIPAddress, ulNetMask, ulGatewayAddress, ulDNSServerAddress;
@@ -185,6 +172,20 @@ adp_socket_t* ipnet_find_socket_by_user_ctx(void *user_ctx)
 }
 
 static
+adp_socket_t* ipnet_is_socket_in_list(void *socket)
+{
+    adp_os_mutex_take(s_socket_list_mutex);
+    for (int i = 0; i < ADP_IPNET_SOCKETS_MAX_NUMBER; i++) {
+        if (s_socket_db[i].socket == socket) {
+            adp_os_mutex_give(s_socket_list_mutex);
+            return s_socket_db[i].socket;
+        }
+    }
+    adp_os_mutex_give(s_socket_list_mutex);
+    return NULL;
+}
+
+static
 void ipnet_del_socket(adp_socket_t *socket)
 {
     adp_os_mutex_take(s_socket_list_mutex);
@@ -226,17 +227,23 @@ void adp_ipnet_socket_free(adp_socket_t socket)
 {
     if (socket) {
         ipnet_del_socket(socket);
-        FreeRTOS_shutdown(socket, 0/* not used */);
+        // Disable monitoring
+        FreeRTOS_setsockopt(socket, 0, FREERTOS_SO_WAKEUP_CALLBACK, NULL, 0);
+        FreeRTOS_shutdown(socket, 0 /* not used */);
         FreeRTOS_closesocket(socket);
+    } else {
+        adp_log_e("Bug: socket is null");
     }
 }
 
 
-uint32_t adp_ipnet_socket_send(adp_socket_t socket, void *buffer, int bytesToSend)
+uint32_t adp_ipnet_socket_send(adp_socket_t socket, const void *buffer, int bytesToSend)
 {
     int32_t socketStatus;
 
     socketStatus = FreeRTOS_send(socket, buffer, bytesToSend, 0);
+
+    adp_log_d("Note: socket 0x%x TX space = %d (socket status %d)", socket, FreeRTOS_tx_space(socket), (int)socketStatus);
 
     if (socketStatus == -pdFREERTOS_ERRNO_ENOSPC) {
         /* The TCP buffers could not accept any more bytes so zero bytes were sent.
@@ -244,7 +251,6 @@ uint32_t adp_ipnet_socket_send(adp_socket_t socket, void *buffer, int bytesToSen
          * it persists so return 0 bytes received rather than an error. */
         socketStatus = 0;
     }
-
     return socketStatus;
 }
 
@@ -269,8 +275,26 @@ uint32_t adp_ipnet_socket_recv(adp_socket_t socket, void *buffer, int bytesToRec
     if (socketStatus > 0) {
         socketStatus = FreeRTOS_recv(socket, buffer, bytesToRecv, 0);
     }
-
+    uint32_t size = FreeRTOS_rx_size(socket);
+    if (size) {
+        adp_log_d("Note: socket 0x%x RX remains %d bytes", socket, FreeRTOS_rx_size(socket));
+    }
     return socketStatus;
+}
+
+static
+void ipnet_client_socket_wakeup_cb(adp_socket_t socket)
+{
+    if (!ipnet_is_socket_in_list(socket)) {
+        adp_log_d("Socket wakeup received for socket that is closing");
+    }
+    if (pdTRUE != FreeRTOS_issocketconnected(socket)) {
+        adp_log_d("Disconnect on socket 0x%x", socket);
+        adp_topic_publish(ADP_TOPIC_IPNET_SOCKET_DISCONNECTED, &socket, sizeof(adp_socket_t), ADP_TOPIC_PRIORITY_HIGH);
+    } else {
+        adp_log_d("Detected rx/tx activity on socket 0x%x", socket);
+        adp_topic_publish(ADP_TOPIC_IPNET_SOCKET_RXTX_ACTIVITY, &socket, sizeof(adp_socket_t), ADP_TOPIC_PRIORITY_HIGH);
+    }
 }
 
 

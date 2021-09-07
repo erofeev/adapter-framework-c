@@ -12,6 +12,7 @@
 #include "adp_osal.h"
 #include "adp_dispatcher.h"
 #include "adp_logging.h"
+#include "adp_tcpip.h"
 #include "adp_mqtt.h"
 
 
@@ -80,7 +81,7 @@ adp_mqtt_session_t* mqtt_find_session_by_socket(void *socket)
         }
     }
     adp_os_mutex_give(s_session_list_mutex);
-    adp_log_e("Session not in the list");
+    adp_log_d("Session not in the list");
     return NULL;
 }
 
@@ -99,7 +100,7 @@ adp_mqtt_session_t* mqtt_find_userid_by_socket(void *socket, void **userid)
     }
     *userid = NULL;
     adp_os_mutex_give(s_session_list_mutex);
-    adp_log_e("Session not in the list");
+    adp_log_d("Session not in the list");
     return NULL;
 }
 
@@ -116,7 +117,7 @@ adp_mqtt_session_t* mqtt_find_session_by_user_ctx(void *user_ctx)
         }
     }
     adp_os_mutex_give(s_session_list_mutex);
-    adp_log_e("Session not in the list");
+    adp_log_d("Session not in the list");
     return NULL;
 }
 
@@ -141,7 +142,7 @@ static
 int32_t mqtt_network_send( NetworkContext_t *pContext, const void* pBuffer, size_t bytes )
 {
     uint32_t sent_bytes = adp_ipnet_socket_send(pContext->socket, pBuffer, bytes);
-    adp_log_d("MQTT sent %d bytes", sent_bytes);
+    adp_log_d("MQTT sent %d/%d bytes to socket 0x%x", sent_bytes, bytes, pContext->socket);
     return sent_bytes;
 }
 
@@ -150,7 +151,7 @@ int32_t mqtt_network_recv( NetworkContext_t *pContext, void* pBuffer, size_t byt
 {
     uint32_t recv_bytes = adp_ipnet_socket_recv(pContext->socket, pBuffer, bytes);
     if (recv_bytes) {
-        adp_log_d("MQTT received %d bytes", recv_bytes);
+        adp_log_d("MQTT received %d bytes from socket 0x%x", recv_bytes, pContext->socket);
     }
     return recv_bytes;
 }
@@ -166,7 +167,7 @@ void mqtt_eventCallback(MQTTContext_t *pContext, MQTTPacketInfo_t *pPacketInfo, 
     if (pPacketInfo->type == MQTT_PACKET_TYPE_SUBACK) {
         adp_mqtt_cmd_status_t  result;
         result.command    = ADP_MQTT_DO_SUBSCRIBE;
-        result.user_ctx    = session->user_ctx;
+        result.user_ctx   = session->user_ctx;
         result.status     = ADP_RESULT_SUCCESS;
         result.subcode    = 0;
         adp_topic_publish(ADP_TOPIC_MQTT_CMD_STATUS, &result, sizeof(adp_mqtt_cmd_status_t), ADP_TOPIC_PRIORITY_HIGH);
@@ -205,9 +206,6 @@ void mqtt_eventCallback(MQTTContext_t *pContext, MQTTPacketInfo_t *pPacketInfo, 
 static
 void adp_mqtt_session_free(adp_mqtt_session_t* session)
 {
-    // Deactivate session (the session will become non-operational)
-    mqtt_del_session(session);
-
     // Clean up resources
     adp_os_free(session->context.transportInterface.pNetworkContext);
     adp_os_free(session->context.networkBuffer.pBuffer);
@@ -247,10 +245,16 @@ adp_mqtt_session_t* adp_mqtt_session_alloc(void* user_ctx, void* socket)
                                               (MQTTEventCallback_t)&mqtt_eventCallback,
                                               &data_buffer);
 
-    if ( (core_mqtt_status != MQTTSuccess ) || (mqtt_add_session(session) != ADP_RESULT_SUCCESS) ) {
+    if (core_mqtt_status != MQTTSuccess) {
         adp_log_e("MQTT alloc result is %d [%s]", core_mqtt_status, MQTT_Status_strerror(core_mqtt_status));
         adp_mqtt_session_free(session);
         session = NULL;
+    } else {
+        if (mqtt_add_session(session) != ADP_RESULT_SUCCESS) {
+            adp_log_e("MQTT alloc result is %d [%s]", core_mqtt_status, MQTT_Status_strerror(core_mqtt_status));
+            adp_mqtt_session_free(session);
+            session = NULL;
+        }
     }
 
     return session;
@@ -285,13 +289,16 @@ adp_result_t mqtt_do_broker_connect(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_
 
     MQTTStatus_t core_mqtt_status = MQTT_Connect(&session->context,
                                                  &session->connect_info,
-                                                 NULL,                    /* No LWT TODO FIXME */
+                                                 NULL,                    /* No LWT support TODO FIXME */
                                                  connect->ack_timeout_ms, /* CONNACK_RECV_TIMEOUT_MS */
                                                  &sessionPresent);
     result->subcode = core_mqtt_status;
 
     if( core_mqtt_status != MQTTSuccess ) {
         adp_log_d("MQTT connect result is %d [%s]", core_mqtt_status, MQTT_Status_strerror(core_mqtt_status));
+        // Deactivate session (the session will become non-operational)
+        mqtt_del_session(session);
+        adp_mqtt_session_free(session);
         result->status = ADP_RESULT_FAILED;
     } else {
         result->status = ADP_RESULT_SUCCESS;
@@ -344,8 +351,12 @@ adp_result_t mqtt_do_disconnect(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_t* c
 {
     adp_mqtt_session_t *session = mqtt_find_session_by_user_ctx(cmd_data->user_ctx);
     if (!session) {
-        return ADP_RESULT_FAILED;
+        result->status = ADP_RESULT_FAILED;
+        return result->status;
     }
+
+    // Session is not operational any more
+    mqtt_del_session(session);
 
     MQTTStatus_t core_mqtt_status = MQTT_Disconnect(&session->context);
     result->subcode = core_mqtt_status;
@@ -378,7 +389,7 @@ int mqtt_socket_monitor_io(uint32_t topic_id, void* data, uint32_t len)
     if (topic_id == ADP_TOPIC_IPNET_SOCKET_DISCONNECTED) {
         adp_mqtt_cmd_t cmd = {
                 .command    = ADP_MQTT_DO_DISCONNECT,
-                .user_ctx    = user_ctx,
+                .user_ctx   = user_ctx,
         };
         adp_log_d("Disconnect received from IPNET");
         adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &cmd, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_HIGH);
@@ -389,7 +400,7 @@ int mqtt_socket_monitor_io(uint32_t topic_id, void* data, uint32_t len)
     if (topic_id == ADP_TOPIC_IPNET_SOCKET_RXTX_ACTIVITY) {
         adp_mqtt_cmd_t cmd = {
                 .command    = ADP_MQTT_DO_PROCESS_LOOP,
-                .user_ctx    = user_ctx,
+                .user_ctx   = user_ctx,
         };
         adp_log_d("RX/TX activity received from IPNET");
         adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &cmd, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_HIGH);
@@ -403,7 +414,7 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
     adp_mqtt_cmd_t *cmd = (adp_mqtt_cmd_t*)data;
     adp_mqtt_cmd_status_t  result;
 
-    result.command = cmd->command;
+    result.command  = cmd->command;
     result.user_ctx = cmd->user_ctx;
 
     switch (cmd->command) {
@@ -432,7 +443,7 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
                 return ADP_RESULT_SUCCESS;
             }
             adp_log_d("MQTT - DO_PROCESS_LOOP");
-                MQTT_ProcessLoop(&session->context, 0);
+            MQTT_ProcessLoop(&session->context, 0);
             // No status for this command type
             return ADP_RESULT_SUCCESS;
         }

@@ -23,12 +23,12 @@
 #define ADP_CONSOLE_MAX_CMD_SIZE                     40
 
 // APP Network settings
-#undef ADP_TCPIP_MODULE_NO_DEBUG
+#define ADP_TCPIP_MODULE_NO_DEBUG
 #define ADP_IPNET_HOSTNAME                             "AdpHostName"
 #define ADP_IPNET_SOCKETS_MAX_NUMBER                 10
 
 // APP MQTT settings
-#undef ADP_MQTT_MODULE_NO_DEBUG
+#define ADP_MQTT_MODULE_NO_DEBUG
 #define ADP_MQTT_SESSIONS_MAX_NUMBER                 10
 
 

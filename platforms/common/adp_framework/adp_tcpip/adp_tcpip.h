@@ -60,7 +60,7 @@ adp_socket_t adp_ipnet_socket_alloc(adp_socket_option_t option);
 
 void adp_ipnet_socket_free(adp_socket_t socket);
 
-uint32_t adp_ipnet_socket_send(adp_socket_t socket, void *buffer, int bytesToSend);
+uint32_t adp_ipnet_socket_send(adp_socket_t socket, const void *buffer, int bytesToSend);
 
 uint32_t adp_ipnet_socket_recv(adp_socket_t socket, void *buffer, int bytesToRecv);
 

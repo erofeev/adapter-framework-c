@@ -20,7 +20,7 @@ void*               s_mqtt_id_2              = (void*)"MQTT client 2";
 
 adp_mqtt_topic_filter_t topics[] = {
         {
-                .QoS = 0,
+                .QoS = 2,
                 .topic_filter = "tele",
         },
         {
@@ -28,7 +28,6 @@ adp_mqtt_topic_filter_t topics[] = {
                 .topic_filter = "testxmr",
         },
 };
-
 
 static void do_tcp_connect(char *tcp_connect_name)
 {
@@ -45,8 +44,8 @@ static void do_tcp_shutdown(char *tcp_connect_name)
 {
     adp_log("Status: closing socket [%s]", tcp_connect_name);
     adp_ipnet_cmd_t ipnet_shutdown = {
-               .user_ctx          = tcp_connect_name,
-               .command           = ADP_IPNET_DO_TCP_SHUTDOWN } ;
+               .user_ctx           = tcp_connect_name,
+               .command            = ADP_IPNET_DO_TCP_SHUTDOWN } ;
     adp_topic_publish(ADP_TOPIC_IPNET_EXECUTE_CMD, &ipnet_shutdown, sizeof(adp_ipnet_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
 }
 
@@ -55,12 +54,12 @@ static void do_mqtt_connect(void* user_ctx, void *socket, int timeout_ms)
 {
     // Connect to the broker
     adp_mqtt_cmd_t mqtt_connect = {
-            .user_ctx                         = (void*)user_ctx,
+            .user_ctx                        = (void*)user_ctx,
             .command                         = ADP_MQTT_DO_CONNECT,
             .connect.socket                  = socket,
             .connect.clean_session           = 1,
             .connect.keep_alive_seconds      = 60,
-            .connect.client_id               = "CLIENT_ID",
+            .connect.client_id               =  user_ctx,
             .connect.username                = "USERNAME",
             .connect.password                = "PASSWORD",
             .connect.ack_timeout_ms          = timeout_ms,
@@ -106,7 +105,7 @@ int app_net_status_handler(uint32_t topic_id, void* data, uint32_t len)
         {
             // Create a tcp socket and try to connect to the server
             do_tcp_connect(s_tcp_socket_mosquitto);
-       //     do_tcp_connect(s_tcp_socket_mosquitto_2);
+            do_tcp_connect(s_tcp_socket_mosquitto_2);
         }
         break;
     case ADP_IPNET_STACK_DOWN:
@@ -183,8 +182,11 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
                 // Subscribe for topics
                 do_mqtt_subscribe(cmd_status->user_ctx);
             } else {
-                // Send DISCONNECT, let's try to clean up everything and try again
-                do_mqtt_disconnect(cmd_status->user_ctx);
+                // Terminate the socket
+                if (cmd_status->user_ctx == s_mqtt_id)
+                    do_tcp_shutdown(s_tcp_socket_mosquitto);
+                if (cmd_status->user_ctx == s_mqtt_id_2)
+                    do_tcp_shutdown(s_tcp_socket_mosquitto_2);
             }
         }
         break;
@@ -194,7 +196,6 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
                 adp_log("===========================");
                 adp_log("MQTT SUCCESFULLY SUBSCRIBED");
                 adp_log("===========================");
-                do_tcp_connect(s_tcp_socket_mosquitto_2);
             } else {
                 // Send DISCONNECT, let's try to clean up everything and try again
                 do_mqtt_disconnect(cmd_status->user_ctx);
@@ -215,4 +216,9 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
     }
 
     return ADP_RESULT_SUCCESS;
+}
+
+void start_second_mqtt_client()
+{
+    do_tcp_connect(s_tcp_socket_mosquitto_2);
 }
