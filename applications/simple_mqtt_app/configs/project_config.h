@@ -10,6 +10,7 @@
 // APP OS settings
 #define ADP_OS_MODULE_NO_DEBUG
 #define ADP_OS_DEFAULT_QUEUE_PUT_TIMEOUT_MS         100
+#define ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED
 
 // APP Dispatcher settings
 #define ADP_DISPATCHER_MODULE_NO_DEBUG
@@ -23,12 +24,12 @@
 #define ADP_CONSOLE_MAX_CMD_SIZE                     40
 
 // APP Network settings
-#define ADP_TCPIP_MODULE_NO_DEBUG
+#undef ADP_TCPIP_MODULE_NO_DEBUG
 #define ADP_IPNET_HOSTNAME                             "AdpHostName"
 #define ADP_IPNET_SOCKETS_MAX_NUMBER                 10
 
 // APP MQTT settings
-#define ADP_MQTT_MODULE_NO_DEBUG
+#undef ADP_MQTT_MODULE_NO_DEBUG
 #define ADP_MQTT_SESSIONS_MAX_NUMBER                 10
 
 

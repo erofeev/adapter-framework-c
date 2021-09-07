@@ -143,9 +143,9 @@ int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
             if (cmd_status->status == ADP_RESULT_SUCCESS) {
                 // Start establishing MQTT session
                 if (cmd_status->user_ctx == s_tcp_socket_mosquitto)
-                    do_mqtt_connect(s_mqtt_id, cmd_status->socket, 1000);
+                    do_mqtt_connect(s_mqtt_id, cmd_status->socket, 2000);
                 if (cmd_status->user_ctx == s_tcp_socket_mosquitto_2)
-                    do_mqtt_connect(s_mqtt_id_2, cmd_status->socket, 1000);
+                    do_mqtt_connect(s_mqtt_id_2, cmd_status->socket, 2000);
             } else {
                 do_tcp_shutdown(cmd_status->user_ctx);
             }

@@ -9,7 +9,7 @@
 
 #include "adp_dispatcher.h"
 
-#define ADP_MQTT_BUFFER_SIZE         2048
+#define ADP_MQTT_BUFFER_SIZE         1024
 
 typedef enum {
     ADP_MQTT_DO_CONNECT              = 0x00000001,

@@ -19,16 +19,15 @@
 HANDLING_CMD(HELP)
 {
     adp_log("Supported commands:");
-    adp_log("\t conn <user_id_of_mqtt>     - connect and subscribe an MQTT client");
+    adp_log("\t mem                        - memory allocation trace");
     adp_log("\t db                         - print DB table");
     adp_log("\t netstat                    - print network runtime stats");
     adp_log("\t os                         - print OS runtime stats");
 }
 
-HANDLING_CMD(CONN)
+HANDLING_CMD(MEM)
 {
-    extern void start_second_mqtt_client();
-    start_second_mqtt_client();
+    adp_os_mem_trace_print();
 }
 
 HANDLING_CMD(DB)
@@ -60,8 +59,8 @@ int app_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
     int  argc = *cmd;
     const char* cmd_name = ++cmd;
 
-    if (strcmp(cmd_name, "conn"  ) == 0) {
-        HANDLE_CMD(CONN, cmd_name, argc);
+    if (strcmp(cmd_name, "mem"  ) == 0) {
+        HANDLE_CMD(MEM, cmd_name, argc);
     } else
     if (strcmp(cmd_name, "db"  ) == 0) {
         HANDLE_CMD(DB, cmd_name, argc);
