@@ -12,11 +12,10 @@
 #include "adp_tcpip.h"
 #include "adp_mqtt.h"
 
-adp_socket_t        s_tcp_socket_mosquitto = (void*)"Socket for MQTT client 1";
-void*               s_mqtt_id              = (void*)"MQTT client 1";
-
-adp_socket_t        s_tcp_socket_mosquitto_2 = (void*)"Socket for MQTT client 2";
+void*               s_mqtt_id                = (void*)"MQTT client 1";
 void*               s_mqtt_id_2              = (void*)"MQTT client 2";
+void*               s_mqtt_id_3              = (void*)"MQTT client 3";
+void*               s_mqtt_id_4              = (void*)"MQTT client 4";
 
 adp_mqtt_topic_filter_t topics[] = {
         {
@@ -104,8 +103,10 @@ int app_net_status_handler(uint32_t topic_id, void* data, uint32_t len)
     case ADP_IPNET_STACK_UP:
         {
             // Create a tcp socket and try to connect to the server
-            do_tcp_connect(s_tcp_socket_mosquitto);
-            do_tcp_connect(s_tcp_socket_mosquitto_2);
+            do_tcp_connect(s_mqtt_id);
+            do_tcp_connect(s_mqtt_id_2);
+            do_tcp_connect(s_mqtt_id_3);
+            do_tcp_connect(s_mqtt_id_4);
         }
         break;
     case ADP_IPNET_STACK_DOWN:
@@ -133,7 +134,8 @@ int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
             cmd_status->socket);
 
     // Process items related to our socket
-    if ( (cmd_status->user_ctx != s_tcp_socket_mosquitto) && (cmd_status->user_ctx != s_tcp_socket_mosquitto_2) ) {
+    if ( (cmd_status->user_ctx != s_mqtt_id)   && (cmd_status->user_ctx != s_mqtt_id_2) &&
+         (cmd_status->user_ctx != s_mqtt_id_3) && (cmd_status->user_ctx != s_mqtt_id_4) ) {
         return ADP_RESULT_SUCCESS;
     }
 
@@ -142,10 +144,7 @@ int app_net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
         {
             if (cmd_status->status == ADP_RESULT_SUCCESS) {
                 // Start establishing MQTT session
-                if (cmd_status->user_ctx == s_tcp_socket_mosquitto)
-                    do_mqtt_connect(s_mqtt_id, cmd_status->socket, 2000);
-                if (cmd_status->user_ctx == s_tcp_socket_mosquitto_2)
-                    do_mqtt_connect(s_mqtt_id_2, cmd_status->socket, 2000);
+                do_mqtt_connect(cmd_status->user_ctx, cmd_status->socket, 2000);
             } else {
                 do_tcp_shutdown(cmd_status->user_ctx);
             }
@@ -183,10 +182,7 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
                 do_mqtt_subscribe(cmd_status->user_ctx);
             } else {
                 // Terminate the socket
-                if (cmd_status->user_ctx == s_mqtt_id)
-                    do_tcp_shutdown(s_tcp_socket_mosquitto);
-                if (cmd_status->user_ctx == s_mqtt_id_2)
-                    do_tcp_shutdown(s_tcp_socket_mosquitto_2);
+                do_tcp_shutdown(cmd_status->user_ctx);
             }
         }
         break;
@@ -205,10 +201,7 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
     case ADP_MQTT_DO_DISCONNECT:
         {
              adp_log("[%s] MQTT SUCCESFULLY DISCONNECTED - DO WE WANT TO TRY AGAIN?", cmd_status->user_ctx);
-             if (cmd_status->user_ctx == s_mqtt_id)
-                 do_tcp_shutdown(s_tcp_socket_mosquitto);
-             if (cmd_status->user_ctx == s_mqtt_id_2)
-                 do_tcp_shutdown(s_tcp_socket_mosquitto_2);
+             do_tcp_shutdown(cmd_status->user_ctx);
         }
         break;
     default:
