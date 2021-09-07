@@ -26,6 +26,9 @@
 
 
 #ifdef ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED
+
+#define ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE          50
+
 typedef struct {
     const char     *caller_name;
     uint32_t               line;
@@ -34,7 +37,7 @@ typedef struct {
     uint32_t               size;
 } adp_mem_usage_db_t;
 
-adp_mem_usage_db_t  mem_db[1000] = {0};
+adp_mem_usage_db_t  mem_db[ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE] = {0};
 uint32_t            peak         = 0;
 uint32_t            total_peak   = 0;
 adp_os_mutex_t      os_mem_mutex = NULL;
@@ -94,7 +97,7 @@ void *adp_os_malloc_trace(uint32_t size, const char* caller_name, uint32_t line_
     }
     adp_os_mutex_take(os_mem_mutex);
     peak += size;
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE; i++) {
         if (!mem_db[i].mem_ptr) {
             mem_db[i].mem_ptr     = ptr;
             mem_db[i].timestamp   = t;
@@ -115,7 +118,7 @@ void  adp_os_free_trace(void* ptr)
     if (!ptr)
         return;
     adp_os_mutex_take(os_mem_mutex);
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE; i++) {
         if (mem_db[i].mem_ptr == ptr) {
             mem_db[i].mem_ptr = NULL;
             vPortFree(ptr);
@@ -136,7 +139,7 @@ void  adp_os_mem_trace_print()
     uint32_t sum = 0;
     adp_log("%3s %20s %40s:%4s  %20s  %s", "#", "Timestamp", "Function", "Line", "Size", "Pointer");
     adp_os_mutex_take(os_mem_mutex);
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE; i++) {
         if (mem_db[i].mem_ptr) {
             k++;
             sum += mem_db[i].size;

@@ -49,8 +49,6 @@ int main(void) {
     adp_ipnet_initialize(network_dispatcher);
     adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS, &app_net_status_handler, "App NET handler");
 
-
-
     adp_os_start();
 
     return EXIT_SUCCESS;

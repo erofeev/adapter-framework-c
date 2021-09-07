@@ -175,7 +175,7 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
             cmd_status->subcode);
 
     switch (cmd_status->command) {
-    case ADP_MQTT_DO_CONNECT: // FIXME
+    case ADP_MQTT_DO_CONNECT:
         {
             if (cmd_status->status == ADP_RESULT_SUCCESS) {
                 adp_log("[%s] MQTT SUCCESFULLY CONNECTED", cmd_status->user_ctx);

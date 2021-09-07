@@ -63,7 +63,7 @@ int main(void) {
     adp_ipnet_initialize(network_dispatcher);
     adp_mqtt_initialize(network_dispatcher);
 
-    // Subscribe for topics we want
+    // Subscribe for topics we need
     adp_topic_subscribe(ADP_TOPIC_CLI_EXECUTE_CMD,     &app_cmd_handler,             "USER app_cmd_handler");
     adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS,      &app_net_status_handler,      "USER app_net_status_handler");
     adp_topic_subscribe(ADP_TOPIC_IPNET_CMD_STATUS,    &app_net_cmd_status_handler,  "USER app_net_cmd_status_handler");
