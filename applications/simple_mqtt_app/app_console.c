@@ -25,6 +25,12 @@ HANDLING_CMD(HELP)
     adp_log("\t os                         - print OS runtime stats");
 }
 
+ADP_WEAK
+void adp_os_mem_trace_print()
+{
+    adp_log_e("ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED should be enabled first");
+}
+
 HANDLING_CMD(MEM)
 {
     adp_os_mem_trace_print();

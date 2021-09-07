@@ -21,14 +21,19 @@
 void print_info(void* params)
 {
     UNUSED_VAR(params);
-    int interval = 60*5; // 5 minutes
+    int interval = 60*1; // 1 minute
+    char  *data;
 
     while(1) {
         adp_os_sleep(1000 * interval);
-        adp_log("uptime is %d seconds", adp_os_uptime());
+        adp_log("GenInfo: uptime is %d seconds", adp_os_uptime());
 
         // Print the whole DB
-        char  *data = "db\n";
+        data = "db\n";
+        adp_topic_publish(ADP_TOPIC_CLI_INPUT_STREAM, data, strlen(data) + 1, ADP_TOPIC_PRIORITY_HIGH);
+
+        // Print the memory trace DB
+        data = "mem\n";
         adp_topic_publish(ADP_TOPIC_CLI_INPUT_STREAM, data, strlen(data) + 1, ADP_TOPIC_PRIORITY_HIGH);
     }
 }

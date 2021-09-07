@@ -178,7 +178,7 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
     case ADP_MQTT_DO_CONNECT: // FIXME
         {
             if (cmd_status->status == ADP_RESULT_SUCCESS) {
-                adp_log("MQTT SUCCESFULLY CONNECTED");
+                adp_log("[%s] MQTT SUCCESFULLY CONNECTED", cmd_status->user_ctx);
                 // Subscribe for topics
                 do_mqtt_subscribe(cmd_status->user_ctx);
             } else {
@@ -193,9 +193,9 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
     case ADP_MQTT_DO_SUBSCRIBE:
         {
             if (cmd_status->status == ADP_RESULT_SUCCESS) {
-                adp_log("===========================");
-                adp_log("MQTT SUCCESFULLY SUBSCRIBED");
-                adp_log("===========================");
+                adp_log("============================================");
+                adp_log("[%s] MQTT SUCCESFULLY SUBSCRIBED", cmd_status->user_ctx);
+                adp_log("============================================");
             } else {
                 // Send DISCONNECT, let's try to clean up everything and try again
                 do_mqtt_disconnect(cmd_status->user_ctx);
@@ -204,7 +204,7 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
         break;
     case ADP_MQTT_DO_DISCONNECT:
         {
-             adp_log("MQTT SUCCESFULLY DISCONNECTED - DO WE WANT TO TRY AGAIN?");
+             adp_log("[%s] MQTT SUCCESFULLY DISCONNECTED - DO WE WANT TO TRY AGAIN?", cmd_status->user_ctx);
              if (cmd_status->user_ctx == s_mqtt_id)
                  do_tcp_shutdown(s_tcp_socket_mosquitto);
              if (cmd_status->user_ctx == s_mqtt_id_2)
@@ -218,7 +218,3 @@ int app_mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
     return ADP_RESULT_SUCCESS;
 }
 
-void start_second_mqtt_client()
-{
-    do_tcp_connect(s_tcp_socket_mosquitto_2);
-}

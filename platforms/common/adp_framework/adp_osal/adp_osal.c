@@ -55,7 +55,7 @@ ADP_WEAK
 void vApplicationDaemonTaskStartupHook( void )
 {
     adp_log("OS started");
-    os_mem_mutex = adp_os_mutex_create();
+//    os_mem_mutex = adp_os_mutex_create();
 }
 
 ADP_WEAK
@@ -89,6 +89,9 @@ void *adp_os_malloc_trace(uint32_t size, const char* caller_name, uint32_t line_
 {
     uint32_t t = adp_os_uptime_ms();
     void *ptr = pvPortMalloc(size);
+    if (!os_mem_mutex) {
+        os_mem_mutex = adp_os_mutex_create();
+    }
     adp_os_mutex_take(os_mem_mutex);
     peak += size;
     for (int i = 0; i < 1000; i++) {
@@ -131,12 +134,13 @@ void  adp_os_mem_trace_print()
 {
     int      k   = 0;
     uint32_t sum = 0;
+    adp_log("%3s %20s %40s:%4s  %20s  %s", "#", "Timestamp", "Function", "Line", "Size", "Pointer");
     adp_os_mutex_take(os_mem_mutex);
     for (int i = 0; i < 1000; i++) {
         if (mem_db[i].mem_ptr) {
             k++;
             sum += mem_db[i].size;
-            adp_log("%03d %20d %20s:%4d  %20d  0x%x", k, mem_db[i].timestamp, mem_db[i].caller_name, mem_db[i].line, mem_db[i].size, mem_db[i].mem_ptr);
+            adp_log("%03d %20d %40s:%4d  %20d  0x%x", k, mem_db[i].timestamp, mem_db[i].caller_name, mem_db[i].line, mem_db[i].size, mem_db[i].mem_ptr);
         }
     }
     adp_log("Mem alloc'd total: %d Max peak: %d", sum, total_peak);
