@@ -61,7 +61,8 @@ int main(void) {
     // Initialize TCP/IP stack & MQTT protocol
     adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create(adp_os_get_max_prio() - 3, 40);
     adp_ipnet_initialize(network_dispatcher);
-    adp_mqtt_initialize(network_dispatcher);
+    adp_dispatcher_handle_t mqtt_dispatcher = adp_dispatcher_create(adp_os_get_max_prio() - 5, 40);
+    adp_mqtt_initialize(mqtt_dispatcher);
 
     // Subscribe for topics we need
     adp_topic_subscribe(ADP_TOPIC_CLI_EXECUTE_CMD,     &app_cmd_handler,             "USER app_cmd_handler");

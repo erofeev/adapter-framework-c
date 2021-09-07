@@ -443,7 +443,7 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
                 return ADP_RESULT_SUCCESS;
             }
             adp_log_d("MQTT - DO_PROCESS_LOOP");
-            MQTT_ProcessLoop(&session->context, 0);
+            MQTT_ProcessLoop(&session->context, 1000); // TODO to think about value of timeout
             // No status for this command type
             return ADP_RESULT_SUCCESS;
         }
