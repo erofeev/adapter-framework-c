@@ -510,7 +510,7 @@ BaseType_t xPhyStartAutoNegotiation( EthernetPhy_t * pxPhyObject,
                                      uint32_t ulPhyMask )
 {
     uint32_t xPhyIndex, ulDoneMask, ulBitMask;
-    uint32_t ulPHYLinkStatus, ulRegValue;
+    uint32_t ulPHYLinkStatus = 0, ulRegValue;
     TickType_t xRemainingTime;
     TimeOut_t xTimer;
 

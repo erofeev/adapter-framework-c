@@ -23,11 +23,11 @@ typedef enum {
 
 #define ADP_ASSERT(A, MSG)         do { if (!A) { adp_log_f(MSG); adp_os_abnormal_stop();} } while (0)
 
-
-typedef void (adp_os_start_task_t)(void* );
 typedef void* adp_os_queue_handle_t;
 typedef void* adp_os_mutex_t;
-
+typedef void* adp_os_timer_t;
+typedef void (* adp_os_timer_cb_t)( adp_os_timer_t timer_obj );
+typedef void (adp_os_start_task_t)(void* );
 
 // Task handling
 void adp_os_start(void);
@@ -47,6 +47,12 @@ uint32_t adp_os_uptime_ms(void);
 uint32_t adp_os_rand(void);
 
 void adp_os_sleep(uint32_t time_ms);
+
+
+// Timer management
+adp_os_timer_t adp_os_timer_start(uint32_t timeout_ms, int auto_reload, adp_os_timer_cb_t callback);
+
+adp_result_t adp_os_timer_stop(adp_os_timer_t timer_obj);
 
 
 // Memory management

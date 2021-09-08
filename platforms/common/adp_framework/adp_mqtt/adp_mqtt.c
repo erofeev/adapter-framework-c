@@ -448,6 +448,21 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
             return ADP_RESULT_SUCCESS;
         }
         break;
+    case ADP_MQTT_DO_BROKER_PING:
+        {
+            adp_mqtt_session_t* session = mqtt_find_session_by_user_ctx(cmd->user_ctx);
+            if (!session) {
+                return ADP_RESULT_SUCCESS;
+            }
+            if (session->context.connectStatus != MQTTConnected) {
+                return ADP_RESULT_SUCCESS;
+            }
+            adp_log_d("MQTT - DO_BROKER_PING");
+            MQTT_Ping(&session->context);
+            // No status for this command type
+            return ADP_RESULT_SUCCESS;
+        }
+        break;
     case ADP_MQTT_DO_DISCONNECT:
         {
             adp_log_d("MQTT - DO_DISCONNECT");
@@ -466,6 +481,25 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
     return ADP_RESULT_SUCCESS;
 }
 
+void mqtt_timer_cb(adp_os_timer_t timer_obj)
+{
+    static uint32_t seconds_counter = 0;
+    seconds_counter++;
+    adp_os_mutex_take(s_session_list_mutex);
+    for (int i = 0; i < ADP_MQTT_SESSIONS_MAX_NUMBER; i++) {
+        if (!s_session_db[i])
+            continue;
+        // Check ping settings
+        if (seconds_counter % s_session_db[i]->connect_info.keepAliveSeconds == 0) {
+            adp_mqtt_cmd_t cmd;
+            cmd.command  = ADP_MQTT_DO_BROKER_PING;
+            cmd.user_ctx = s_session_db[i]->user_ctx;
+            // Request us to ping the broker
+            adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &cmd, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_HIGH);
+        }
+    }
+    adp_os_mutex_give(s_session_list_mutex);
+}
 
 adp_result_t adp_mqtt_initialize(adp_dispatcher_handle_t dispatcher)
 {
@@ -481,6 +515,10 @@ adp_result_t adp_mqtt_initialize(adp_dispatcher_handle_t dispatcher)
     adp_topic_subscribe(ADP_TOPIC_MQTT_EXECUTE_CMD,           &mqtt_cmd_handler,       "ADP.MQTT.SVC.Executor");
     adp_topic_subscribe(ADP_TOPIC_IPNET_SOCKET_RXTX_ACTIVITY, &mqtt_socket_monitor_io, "ADP.MQTT.SVC.MonitorIO");
     adp_topic_subscribe(ADP_TOPIC_IPNET_SOCKET_DISCONNECTED,  &mqtt_socket_monitor_io, "ADP.MQTT.SVC.MonitorIO");
+
+    // Start forever timer
+    adp_os_timer_t s_mqtt_timer_obj = adp_os_timer_start(1000, 1 /* auto reload */, mqtt_timer_cb);
+    UNUSED_VAR(s_mqtt_timer_obj);
 
     return ADP_RESULT_SUCCESS;
 }

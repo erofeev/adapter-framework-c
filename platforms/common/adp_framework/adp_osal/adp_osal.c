@@ -12,6 +12,7 @@
 #include "task.h"
 #include "queue.h"
 #include "semphr.h"
+#include "timers.h"
 
 #include "adp_osal.h"
 #include "adp_logging.h"
@@ -181,6 +182,38 @@ uint32_t adp_os_uptime_ms(void)
 {
     return xTaskGetTickCount()/(configTICK_RATE_HZ/1000);
 }
+
+adp_os_timer_t adp_os_timer_start(uint32_t timeout_ms, int auto_reload, adp_os_timer_cb_t callback)
+{
+    if (!timeout_ms)
+        return NULL;
+
+    adp_os_timer_t t = (adp_os_timer_t)xTimerCreate("", timeout_ms * portTICK_PERIOD_MS,
+                                                    (UBaseType_t)auto_reload, NULL,
+                                                    (TimerCallbackFunction_t)callback);
+    if (!t) {
+        ADP_ASSERT(t, "Unable to create a timer");
+        return NULL;
+    }
+
+    if( xTimerStart(t, 0) != pdPASS ) {
+        ADP_ASSERT(t, "Unable to start a timer");
+        return NULL;
+    }
+
+    return t;
+}
+
+adp_result_t adp_os_timer_stop(adp_os_timer_t timer_obj)
+{
+    BaseType_t result = xTimerStop(timer_obj, 100);
+    if (result != pdPASS ) {
+        adp_log_e("Unable to stop timer");
+        return ADP_RESULT_TIMEOUT;
+    }
+    return ADP_RESULT_SUCCESS;
+}
+
 int adp_os_get_max_prio(void)
 {
     return configMAX_PRIORITIES;
