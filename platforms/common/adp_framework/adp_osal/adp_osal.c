@@ -55,6 +55,14 @@ void vApplicationTickHook( void )
 }
 
 ADP_WEAK
+vApplicationStackOverflowHook( xTaskHandle *pxTask, signed portCHAR *pcTaskName )
+{
+    adp_log_e("Stack overflow at %s", pcTaskName);
+    ADP_ASSERT(0, "Aborted");
+
+}
+
+ADP_WEAK
 void vApplicationDaemonTaskStartupHook( void )
 {
     adp_log("OS started");

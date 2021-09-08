@@ -52,16 +52,16 @@ int main(void) {
     adp_log("Creating the World");
 
     // Example of user task creation
-    adp_os_start_task("Info-print", &print_info, 128, 0, NULL);
+    adp_os_start_task("APP Info-print", &print_info, 128, 0, NULL);
 
     // Run console and subscribe on the CLI cmd execution topic
-    adp_dispatcher_handle_t low_prio_dispatcher = adp_dispatcher_create("Console", 0, 25);
-    adp_os_start_task("Console", &adp_console_task, 128, 0, low_prio_dispatcher);
+    adp_dispatcher_handle_t low_prio_dispatcher = adp_dispatcher_create("CLI", 0, 25);
+    adp_os_start_task("APP Console", &adp_console_task, 128, 0, low_prio_dispatcher);
 
     // Initialize TCP/IP stack & MQTT protocol
-    adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create("IPNET", adp_os_get_max_prio() - 3, 40);
+    adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create("IPNET", adp_os_get_max_prio() - 2, 40);
     adp_ipnet_initialize(network_dispatcher);
-    adp_dispatcher_handle_t mqtt_dispatcher    = adp_dispatcher_create("MQTT",  adp_os_get_max_prio() - 4, 40);
+    adp_dispatcher_handle_t mqtt_dispatcher    = adp_dispatcher_create("MQTT",  adp_os_get_max_prio() - 3, 40);
     adp_mqtt_initialize(mqtt_dispatcher);
 
     // Subscribe for topics we need

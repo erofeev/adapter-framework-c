@@ -1,11 +1,8 @@
-/* Copyright (C) 2019 Amazon.com, Inc. or its affiliates.  All Rights Reserved. */
-/* << EST */
-#include "FreeRTOSConfig.h"
-#if !defined(configUSE_HEAP_SCHEME) || (configUSE_HEAP_SCHEME==4 && configSUPPORT_DYNAMIC_ALLOCATION==1)
-
 /*
- * FreeRTOS Kernel V10.4.1
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * FreeRTOS Kernel <DEVELOPMENT BRANCH>
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ *
+ * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -43,11 +40,9 @@
  * all the API functions to use the MPU wrappers.  That should only be done when
  * task.h is included from an application file. */
 #define MPU_WRAPPERS_INCLUDED_FROM_API_FILE
+
 #include "FreeRTOS.h"
 #include "task.h"
-
-#undef pvPortMalloc
-#undef vPortFree
 
 #undef MPU_WRAPPERS_INCLUDED_FROM_API_FILE
 
@@ -66,16 +61,6 @@
 
 /* The application writer has already defined the array used for the RTOS
 * heap - probably so it can be placed in a special segment or address. */
-    extern uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
-#elif configUSE_HEAP_SECTION_NAME && configCOMPILER==configCOMPILER_ARM_IAR /* << EST */
-  #pragma language=extended
-  #pragma location = configHEAP_SECTION_NAME_STRING
-  static unsigned char ucHeap[configTOTAL_HEAP_SIZE] @ configHEAP_SECTION_NAME_STRING;
-#elif configUSE_HEAP_SECTION_NAME
-  static unsigned char __attribute__((section (configHEAP_SECTION_NAME_STRING))) ucHeap[configTOTAL_HEAP_SIZE];
-#elif( configAPPLICATION_ALLOCATED_HEAP == 1 )
-    /* The application writer has already defined the array used for the RTOS
-    heap - probably so it can be placed in a special segment or address. */
     extern uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
 #else
     PRIVILEGED_DATA static uint8_t ucHeap[ configTOTAL_HEAP_SIZE ];
@@ -109,11 +94,7 @@ static void prvHeapInit( void ) PRIVILEGED_FUNCTION;
 
 /* The size of the structure placed at the beginning of each allocated memory
  * block must by correctly byte aligned. */
-#if 0
 static const size_t xHeapStructSize = ( sizeof( BlockLink_t ) + ( ( size_t ) ( portBYTE_ALIGNMENT - 1 ) ) ) & ~( ( size_t ) portBYTE_ALIGNMENT_MASK );
-#else /* << EST do not optimize this variable, needed for NXP TAD plugin */
-static const volatile size_t xHeapStructSize = ( sizeof( BlockLink_t ) + ( ( size_t ) ( portBYTE_ALIGNMENT - 1 ) ) ) & ~( ( size_t ) portBYTE_ALIGNMENT_MASK );
-#endif
 
 /* Create a couple of list links to mark the start and end of the list. */
 PRIVILEGED_DATA static BlockLink_t xStart, * pxEnd = NULL;
@@ -157,19 +138,27 @@ void * pvPortMalloc( size_t xWantedSize )
          * kernel, so it must be free. */
         if( ( xWantedSize & xBlockAllocatedBit ) == 0 )
         {
-            /* The wanted size is increased so it can contain a BlockLink_t
+            /* The wanted size must be increased so it can contain a BlockLink_t
              * structure in addition to the requested amount of bytes. */
-            if( xWantedSize > 0 )
+            if( ( xWantedSize > 0 ) &&
+                ( ( xWantedSize + xHeapStructSize ) >  xWantedSize ) ) /* Overflow check */
             {
                 xWantedSize += xHeapStructSize;
 
-                /* Ensure that blocks are always aligned to the required number
-                 * of bytes. */
+                /* Ensure that blocks are always aligned. */
                 if( ( xWantedSize & portBYTE_ALIGNMENT_MASK ) != 0x00 )
                 {
-                    /* Byte alignment required. */
-                    xWantedSize += ( portBYTE_ALIGNMENT - ( xWantedSize & portBYTE_ALIGNMENT_MASK ) );
-                    configASSERT( ( xWantedSize & portBYTE_ALIGNMENT_MASK ) == 0 );
+                    /* Byte alignment required. Check for overflow. */
+                    if( ( xWantedSize + ( portBYTE_ALIGNMENT - ( xWantedSize & portBYTE_ALIGNMENT_MASK ) ) )
+                            > xWantedSize )
+                    {
+                        xWantedSize += ( portBYTE_ALIGNMENT - ( xWantedSize & portBYTE_ALIGNMENT_MASK ) );
+                        configASSERT( ( xWantedSize & portBYTE_ALIGNMENT_MASK ) == 0 );
+                    }
+                    else
+                    {
+                        xWantedSize = 0;
+                    }
                 }
                 else
                 {
@@ -178,13 +167,13 @@ void * pvPortMalloc( size_t xWantedSize )
             }
             else
             {
-                mtCOVERAGE_TEST_MARKER();
+                xWantedSize = 0;
             }
 
             if( ( xWantedSize > 0 ) && ( xWantedSize <= xFreeBytesRemaining ) )
             {
                 /* Traverse the list from the start (lowest address) block until
-                 * one  of adequate size is found. */
+                 * one of adequate size is found. */
                 pxPreviousBlock = &xStart;
                 pxBlock = xStart.pxNextFreeBlock;
 
@@ -195,7 +184,7 @@ void * pvPortMalloc( size_t xWantedSize )
                 }
 
                 /* If the end marker was reached then a block of adequate size
-                 * was  not found. */
+                 * was not found. */
                 if( pxBlock != pxEnd )
                 {
                     /* Return the memory space pointed to - jumping over the
@@ -270,9 +259,8 @@ void * pvPortMalloc( size_t xWantedSize )
         {
             if( pvReturn == NULL )
             {
-      /* << EST: Using configuration macro name for hook */
-            extern void configUSE_MALLOC_FAILED_HOOK_NAME( void );
-      configUSE_MALLOC_FAILED_HOOK_NAME();
+                extern void vApplicationMallocFailedHook( void );
+                vApplicationMallocFailedHook();
             }
             else
             {
@@ -514,14 +502,3 @@ void vPortGetHeapStats( HeapStats_t * pxHeapStats )
     }
     taskEXIT_CRITICAL();
 }
-#if 1 /* << EST */
-void vPortInitializeHeap(void) {
-  pxEnd = NULL; /* force initialization of heap next time a block gets allocated */
-  xStart.pxNextFreeBlock = NULL;
-  xStart.xBlockSize = 0;
-  xFreeBytesRemaining = 0;
-  xMinimumEverFreeBytesRemaining = 0;
-  xBlockAllocatedBit = 0;
-}
-#endif
-#endif /* configUSE_HEAP_SCHEME==4 */ /* << EST */
