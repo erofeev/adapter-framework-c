@@ -478,7 +478,7 @@ adp_result_t adp_mqtt_initialize(adp_dispatcher_handle_t dispatcher)
     adp_topic_register(dispatcher, ADP_TOPIC_MQTT_INCOMING_TOPIC,   "MQTT.IncomingTopic");
 
     // Subscribe for topics
-    adp_topic_subscribe(ADP_TOPIC_MQTT_EXECUTE_CMD,           &mqtt_cmd_handler, "ADP.MQTT.SVC.Executor");
+    adp_topic_subscribe(ADP_TOPIC_MQTT_EXECUTE_CMD,           &mqtt_cmd_handler,       "ADP.MQTT.SVC.Executor");
     adp_topic_subscribe(ADP_TOPIC_IPNET_SOCKET_RXTX_ACTIVITY, &mqtt_socket_monitor_io, "ADP.MQTT.SVC.MonitorIO");
     adp_topic_subscribe(ADP_TOPIC_IPNET_SOCKET_DISCONNECTED,  &mqtt_socket_monitor_io, "ADP.MQTT.SVC.MonitorIO");
 

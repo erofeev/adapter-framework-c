@@ -49,9 +49,9 @@ typedef struct {
 // The content of ADP_TOPIC_IPNET_EXECUTE_CMD
 typedef struct {
     void                        *user_ctx;
-    adp_ipnet_command_code_t     command;
+    adp_ipnet_command_code_t      command;
     union {
-        adp_ipnet_cmd_connect_t  connect;
+        adp_ipnet_cmd_connect_t   connect;
     };
 } adp_ipnet_cmd_t;
 

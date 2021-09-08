@@ -416,14 +416,14 @@ adp_result_t adp_ipnet_initialize(adp_dispatcher_handle_t dispatcher)
     s_socket_list_mutex = adp_os_mutex_create();
 
     // Published topics
-    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_IPSTATUS,        "IPNET.Status");
-    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_EXECUTE_CMD,     "IPNET.ExecuteCmd");
-    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_CMD_STATUS,      "IPNET.CmdStatus");
+    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_IPSTATUS,             "IPNET.Status");
+    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_EXECUTE_CMD,          "IPNET.ExecuteCmd");
+    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_CMD_STATUS,           "IPNET.CmdStatus");
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_SOCKET_RXTX_ACTIVITY, "IPNET.SocketIOActivity");
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_SOCKET_DISCONNECTED,  "IPNET.SocketIODisconnect");
 
     // Subscribed for topics
-    adp_topic_subscribe(ADP_TOPIC_IPNET_EXECUTE_CMD, &ipnet_cmd_handler, "ADP.IPNET.SVC.Executor");
+    adp_topic_subscribe(ADP_TOPIC_IPNET_EXECUTE_CMD, &ipnet_cmd_handler,  "ADP.IPNET.SVC.Executor");
 
     /*
      * The address values passed in here are used if ipconfigUSE_DHCP

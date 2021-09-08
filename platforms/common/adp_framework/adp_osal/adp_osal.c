@@ -55,11 +55,10 @@ void vApplicationTickHook( void )
 }
 
 ADP_WEAK
-vApplicationStackOverflowHook( xTaskHandle *pxTask, signed portCHAR *pcTaskName )
+void vApplicationStackOverflowHook( TaskHandle_t xTask, char * pcTaskName )
 {
     adp_log_e("Stack overflow at %s", pcTaskName);
     ADP_ASSERT(0, "Aborted");
-
 }
 
 ADP_WEAK
