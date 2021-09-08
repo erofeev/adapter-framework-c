@@ -48,7 +48,8 @@ HANDLING_CMD(OS)
     if (buffer) {
         memset(buffer, 0x00, 256);
         adp_os_get_tasks_list(buffer);
-        adp_log("\n\r\n\rUptime - %lu.%03d seconds\n%s", uptime/1000, uptime%1000, buffer);
+        adp_log("\n\r\n\r[Uptime] %lu.%03d s\n[Heap] Total: %15d\n[Heap] Free: %15d\n\nTasks stats:\n%s",
+                uptime/1000, uptime%1000, adp_os_get_total_heap_size(), adp_os_get_free_heap_size(), buffer);
         adp_os_free(buffer);
     }
 }

@@ -23,7 +23,7 @@ typedef void* adp_dispatcher_handle_t;
 typedef adp_result_t (adp_topic_cb)(uint32_t topic_id, void* data, uint32_t len);
 
 
-adp_dispatcher_handle_t adp_dispatcher_create(uint32_t os_prio, uint32_t max_items);
+adp_dispatcher_handle_t adp_dispatcher_create(const char* name, uint32_t os_prio, uint32_t max_items);
 
 adp_result_t adp_topic_register(adp_dispatcher_handle_t dispatcher_hnd, uint32_t topic_id, const char* topic_name);
 

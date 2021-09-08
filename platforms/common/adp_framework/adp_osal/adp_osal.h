@@ -50,7 +50,9 @@ void adp_os_sleep(uint32_t time_ms);
 
 
 // Memory management
-int adp_os_get_free_heap_size(void);
+uint32_t adp_os_get_total_heap_size(void);
+
+uint32_t adp_os_get_free_heap_size(void);
 
 #ifdef ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED
     void *adp_os_malloc_trace(uint32_t size, const char* caller_name, uint32_t line_number);
@@ -62,6 +64,7 @@ int adp_os_get_free_heap_size(void);
     void *adp_os_malloc(uint32_t size);
     void adp_os_free(void* ptr);
 #endif
+
 
 // Mutexes
 adp_os_mutex_t adp_os_mutex_create(void);

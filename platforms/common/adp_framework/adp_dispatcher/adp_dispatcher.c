@@ -11,8 +11,6 @@
 #include "adp_logging.h"
 
 
-#define ADP_DISPATCHER_TASK_NAME_TEMPLATE      "ADP#x@x"
-
 #ifdef ADP_DISPATCHER_MODULE_NO_DEBUG
  #ifdef adp_log_d
   #undef  adp_log_d
@@ -315,10 +313,9 @@ void dispatcher_task(void* data)
 }
 
 
-adp_dispatcher_handle_t adp_dispatcher_create(uint32_t os_prio, uint32_t max_items)
+adp_dispatcher_handle_t adp_dispatcher_create(const char* name, uint32_t os_prio, uint32_t max_items)
 {
     static int d_cnt = 0;
-    uint32_t size_of_name = sizeof(ADP_DISPATCHER_TASK_NAME_TEMPLATE);
 
     // Create queue
     adp_os_queue_handle_t queue = adp_os_queue_create(max_items, sizeof(adp_generic_msg_t)*max_items);
@@ -327,21 +324,8 @@ adp_dispatcher_handle_t adp_dispatcher_create(uint32_t os_prio, uint32_t max_ite
         return (adp_dispatcher_handle_t)NULL;
     }
 
-    // Construct task name
-    char *auto_name  = (char*) adp_os_malloc(size_of_name);
-    if (auto_name) {
-        memcpy(auto_name, ADP_DISPATCHER_TASK_NAME_TEMPLATE, size_of_name);
-        auto_name[size_of_name - 2] = 0x30 + (os_prio % 255);
-        auto_name[size_of_name - 4] = 0x30 + (d_cnt   % 255);
-    }
-
     // Start dispatcher with the queue
-    int result = adp_os_start_task(auto_name, &dispatcher_task, 512, os_prio, (void*)queue);
-
-    // Clean up, check results and exit
-    if (auto_name) {
-        adp_os_free(auto_name);
-    }
+    int result = adp_os_start_task(name, &dispatcher_task, 512, os_prio, (void*)queue);
 
     if (ADP_RESULT_SUCCESS == result) {
         if (ADP_RESULT_SUCCESS == dispatcher_add((adp_dispatcher_handle_t)queue, d_cnt)) {

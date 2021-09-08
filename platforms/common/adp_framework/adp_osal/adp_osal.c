@@ -58,7 +58,6 @@ ADP_WEAK
 void vApplicationDaemonTaskStartupHook( void )
 {
     adp_log("OS started");
-//    os_mem_mutex = adp_os_mutex_create();
 }
 
 ADP_WEAK
@@ -146,7 +145,7 @@ void  adp_os_mem_trace_print()
             adp_log("%03d %20d %40s:%4d  %20d  0x%x", k, mem_db[i].timestamp, mem_db[i].caller_name, mem_db[i].line, mem_db[i].size, mem_db[i].mem_ptr);
         }
     }
-    adp_log("Mem alloc'd total: %d Max peak: %d", sum, total_peak);
+    adp_log("ADP modules, heap alloc'd total: %d Max used peak: %d", sum, total_peak);
     adp_os_mutex_give(os_mem_mutex);
 }
 #else
@@ -188,7 +187,12 @@ char* adp_os_get_task_name(void)
         return NULL;
 }
 
-int adp_os_get_free_heap_size(void)
+uint32_t adp_os_get_total_heap_size(void)
+{
+    return configTOTAL_HEAP_SIZE;
+}
+
+uint32_t adp_os_get_free_heap_size(void)
 {
     return (int)xPortGetFreeHeapSize();
 }
