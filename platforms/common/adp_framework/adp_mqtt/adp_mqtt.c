@@ -17,10 +17,10 @@
 
 
 #ifdef ADP_MQTT_MODULE_NO_DEBUG
- #ifdef adp_log_d
-  #undef  adp_log_d
- #endif
- #define adp_log_d(...)
+    #undef  adp_log_d
+    #undef  adp_log_dd
+    #define adp_log_d(...)
+    #define adp_log_dd(...)
 #endif
 
 
@@ -145,7 +145,7 @@ int32_t mqtt_network_send( NetworkContext_t *pContext, const void* pBuffer, size
         return 0;
     }
     uint32_t sent_bytes = adp_ipnet_socket_send(pContext->socket, pBuffer, bytes);
-    adp_log_d("MQTT sent %d/%d bytes to socket 0x%x", sent_bytes, bytes, pContext->socket);
+    adp_log_dd("MQTT sent %d/%d bytes to socket 0x%x", sent_bytes, bytes, pContext->socket);
     return sent_bytes;
 }
 
@@ -157,7 +157,7 @@ int32_t mqtt_network_recv( NetworkContext_t *pContext, void* pBuffer, size_t byt
     }
     uint32_t recv_bytes = adp_ipnet_socket_recv(pContext->socket, pBuffer, bytes);
     if (recv_bytes) {
-        adp_log_d("MQTT received %d bytes from socket 0x%x", recv_bytes, pContext->socket);
+        adp_log_dd("MQTT received %d bytes from socket 0x%x", recv_bytes, pContext->socket);
     }
     return recv_bytes;
 }
@@ -387,7 +387,7 @@ int mqtt_socket_monitor_io(uint32_t topic_id, void* data, uint32_t len)
     adp_mqtt_session_t *session = mqtt_find_userid_by_socket(*socket, &user_ctx);
 
     if ( (!session) || (!user_ctx) ){
-        adp_log_d("Socket does not belong to MQTT session, topic 0x%x on socket 0x%x", topic_id, *socket);
+        adp_log_dd("Socket does not belong to MQTT session, topic 0x%x on socket 0x%x", topic_id, *socket);
         return ADP_RESULT_SUCCESS;
     }
 

@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "FreeRTOS.h"
 #include "task.h"
@@ -19,10 +20,10 @@
 
 
 #ifdef ADP_OS_MODULE_NO_DEBUG
- #ifdef adp_log_d
-  #undef  adp_log_d
- #endif
- #define adp_log_d(...)
+    #undef  adp_log_d
+    #undef  adp_log_dd
+    #define adp_log_d(...)
+    #define adp_log_dd(...)
 #endif
 
 

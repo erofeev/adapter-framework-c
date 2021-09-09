@@ -8,9 +8,9 @@
 #define ADAPTERS_ADP_DISPATCHER_H_
 
 #include <stdint.h>
+#include <stddef.h>
 
 #include "adp_osal.h"
-
 
 typedef enum {
     ADP_TOPIC_PRIORITY_NORMAL  = 0,

@@ -70,8 +70,8 @@ int main(void) {
     adp_topic_subscribe(ADP_TOPIC_MQTT_CMD_STATUS,     &app_mqtt_cmd_status_handler, "USER app_mqtt_cmd_status_handler");
     adp_topic_subscribe(ADP_TOPIC_MQTT_INCOMING_TOPIC, &app_mqtt_incoming_handler,   "USER app_mqtt_incoming_handler");
 
-    adp_os_start();
 
+    adp_os_start();
 
     return EXIT_SUCCESS;
 }

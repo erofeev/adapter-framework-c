@@ -16,10 +16,10 @@
 #define ADP_ASCII_SPACE                   0x20
 
 #ifdef ADP_CONSOLE_MODULE_NO_DEBUG
- #ifdef adp_log_d
-  #undef  adp_log_d
- #endif
- #define adp_log_d(...)
+    #undef  adp_log_d
+    #undef  adp_log_dd
+    #define adp_log_d(...)
+    #define adp_log_dd(...)
 #endif
 
 

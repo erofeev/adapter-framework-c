@@ -16,10 +16,10 @@
 
 
 #ifdef ADP_TCPIP_MODULE_NO_DEBUG
- #ifdef adp_log_d
-  #undef  adp_log_d
- #endif
- #define adp_log_d(...)
+    #undef  adp_log_d
+    #undef  adp_log_dd
+    #define adp_log_d(...)
+    #define adp_log_dd(...)
 #endif
 
 typedef struct {
@@ -243,7 +243,7 @@ uint32_t adp_ipnet_socket_send(adp_socket_t socket, const void *buffer, int byte
 
     socketStatus = FreeRTOS_send(socket, buffer, bytesToSend, 0);
 
-    adp_log_d("Note: socket 0x%x TX space = %d (socket status %d)", socket, FreeRTOS_tx_space(socket), (int)socketStatus);
+    adp_log_dd("Note: socket 0x%x TX space = %d (socket status %d)", socket, FreeRTOS_tx_space(socket), (int)socketStatus);
 
     if (socketStatus == -pdFREERTOS_ERRNO_ENOSPC) {
         /* The TCP buffers could not accept any more bytes so zero bytes were sent.
@@ -277,7 +277,7 @@ uint32_t adp_ipnet_socket_recv(adp_socket_t socket, void *buffer, int bytesToRec
     }
     uint32_t size = FreeRTOS_rx_size(socket);
     if (size) {
-        adp_log_d("Note: socket 0x%x RX remains %d bytes", socket, FreeRTOS_rx_size(socket));
+        adp_log_dd("Note: socket 0x%x RX remains %d bytes", socket, FreeRTOS_rx_size(socket));
     }
     return socketStatus;
 }
@@ -289,10 +289,10 @@ void ipnet_client_socket_wakeup_cb(adp_socket_t socket)
         adp_log_d("Socket wakeup received for socket that is closing");
     }
     if (pdTRUE != FreeRTOS_issocketconnected(socket)) {
-        adp_log_d("Disconnect on socket 0x%x", socket);
+        adp_log_dd("Disconnect on socket 0x%x", socket);
         adp_topic_publish(ADP_TOPIC_IPNET_SOCKET_DISCONNECTED, &socket, sizeof(adp_socket_t), ADP_TOPIC_PRIORITY_HIGH);
     } else {
-        adp_log_d("Detected rx/tx activity on socket 0x%x", socket);
+        adp_log_dd("Detected rx/tx activity on socket 0x%x", socket);
         adp_topic_publish(ADP_TOPIC_IPNET_SOCKET_RXTX_ACTIVITY, &socket, sizeof(adp_socket_t), ADP_TOPIC_PRIORITY_HIGH);
     }
 }
