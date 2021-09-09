@@ -42,7 +42,6 @@ int app_mqtt_incoming_handler(uint32_t topic_id, void* data, uint32_t len)
 {
     adp_mqtt_received_topic_t *topic_data = data;
 
-
     adp_log("INCOMING DATA Topic [%s], Data [%s]", &topic_data->buffer[0], &topic_data->buffer[topic_data->topic_name_size]);
 
     return ADP_RESULT_SUCCESS;

@@ -141,6 +141,9 @@ void mqtt_del_session(adp_mqtt_session_t* session)
 static
 int32_t mqtt_network_send( NetworkContext_t *pContext, const void* pBuffer, size_t bytes )
 {
+    if (!mqtt_find_session_by_socket(pContext->socket)) {
+        return 0;
+    }
     uint32_t sent_bytes = adp_ipnet_socket_send(pContext->socket, pBuffer, bytes);
     adp_log_d("MQTT sent %d/%d bytes to socket 0x%x", sent_bytes, bytes, pContext->socket);
     return sent_bytes;
@@ -149,6 +152,9 @@ int32_t mqtt_network_send( NetworkContext_t *pContext, const void* pBuffer, size
 static
 int32_t mqtt_network_recv( NetworkContext_t *pContext, void* pBuffer, size_t bytes )
 {
+    if (!mqtt_find_session_by_socket(pContext->socket)) {
+        return 0;
+    }
     uint32_t recv_bytes = adp_ipnet_socket_recv(pContext->socket, pBuffer, bytes);
     if (recv_bytes) {
         adp_log_d("MQTT received %d bytes from socket 0x%x", recv_bytes, pContext->socket);
@@ -443,7 +449,7 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
                 return ADP_RESULT_SUCCESS;
             }
             adp_log_d("MQTT - DO_PROCESS_LOOP");
-            MQTT_ProcessLoop(&session->context, 300); // TODO to think about value of timeout
+            MQTT_ProcessLoop(&session->context, ADP_MQTT_PROCESS_LOOP_TIMEOUT_MS);
             // No status for this command type
             return ADP_RESULT_SUCCESS;
         }

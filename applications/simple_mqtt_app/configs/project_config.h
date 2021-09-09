@@ -31,7 +31,7 @@
 // APP MQTT settings
 #undef ADP_MQTT_MODULE_NO_DEBUG
 #define ADP_MQTT_SESSIONS_MAX_NUMBER                 10
-
+#define ADP_MQTT_PROCESS_LOOP_TIMEOUT_MS            300
 
 // Topics DB
 enum app_topics_enum {
