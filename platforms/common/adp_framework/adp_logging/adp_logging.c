@@ -82,5 +82,6 @@ void adp_log_output(adp_log_level_t level, const char* fname, const char* functi
     vprintf(fmt, args);
     printf("%s\n", ADP_LOG_COLOR_BRIGHT_WHITE);
     va_end(args);
+    fflush(stdout);
     adp_os_mutex_give(locker);
 }

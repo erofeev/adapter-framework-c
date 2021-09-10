@@ -270,7 +270,9 @@ adp_result_t mqtt_do_broker_connect(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_
 {
     bool sessionPresent;
     adp_mqtt_cmd_connect_t *connect = (adp_mqtt_cmd_connect_t*)&cmd_data->connect;
-    adp_mqtt_session_t     *session = adp_mqtt_session_alloc(cmd_data->user_ctx, connect->socket);
+
+    // Allocate new session
+    adp_mqtt_session_t *session = adp_mqtt_session_alloc(cmd_data->user_ctx, connect->socket);
 
     if (!session) {
         result->status = ADP_RESULT_MALLOC_FAILED;

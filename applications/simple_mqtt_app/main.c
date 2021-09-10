@@ -56,20 +56,18 @@ int main(void) {
     // Run console and subscribe on the CLI cmd execution topic
     adp_dispatcher_handle_t low_prio_dispatcher = adp_dispatcher_create("CLI", 0, 25);
     adp_os_start_task("APP Console", &adp_console_task, 128, 0, low_prio_dispatcher);
+    adp_topic_subscribe(ADP_TOPIC_CLI_EXECUTE_CMD, &app_cmd_handler, "USER app_cmd_handler");
 
-    // Initialize TCP/IP stack & MQTT protocol
+    // Initialize TCP/IP stack
     adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create("IPNET", adp_os_get_max_prio() - 2, 40);
     adp_ipnet_initialize(network_dispatcher);
+
+    // Initialize MQTT
     adp_dispatcher_handle_t mqtt_dispatcher    = adp_dispatcher_create("MQTT",  adp_os_get_max_prio() - 3, 40);
     adp_mqtt_initialize(mqtt_dispatcher);
 
-    // Subscribe for topics we need
-    adp_topic_subscribe(ADP_TOPIC_CLI_EXECUTE_CMD,     &app_cmd_handler,             "USER app_cmd_handler");
-    adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS,      &app_net_status_handler,      "USER app_net_status_handler");
-    adp_topic_subscribe(ADP_TOPIC_IPNET_CMD_STATUS,    &app_net_cmd_status_handler,  "USER app_net_cmd_status_handler");
-    adp_topic_subscribe(ADP_TOPIC_MQTT_CMD_STATUS,     &app_mqtt_cmd_status_handler, "USER app_mqtt_cmd_status_handler");
-    adp_topic_subscribe(ADP_TOPIC_MQTT_INCOMING_TOPIC, &app_mqtt_incoming_handler,   "USER app_mqtt_incoming_handler");
-
+    // Subscribe for all MQTT topics
+    adp_topic_subscribe(ADP_TOPIC_MQTT_INCOMING_TOPIC, &app_mqtt_incoming_handler, "USER app_mqtt_incoming_handler");
 
     adp_os_start();
 
