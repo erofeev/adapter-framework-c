@@ -221,6 +221,10 @@ void adp_mqtt_agent_start(adp_mqtt_client_t *client)
         adp_topic_subscribe(ADP_TOPIC_MQTT_CMD_STATUS,     &mqtt_cmd_status_handler, "ADP.MQTT.Agent.MqttCmdStatus");
         memset(s_mqtt_client_db, 0x00, sizeof(s_mqtt_client_db));
     }
+    if (cnt == ADP_MQTT_SESSIONS_MAX_NUMBER) {
+        adp_log_e("Max number of MQTT clients reached");
+        return;
+    }
     s_mqtt_client_db[cnt++] = client;
     do_tcp_connect(client);
 }

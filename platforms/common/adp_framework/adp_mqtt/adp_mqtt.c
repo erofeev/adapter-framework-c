@@ -31,6 +31,7 @@ typedef struct NetworkContext {
 
 typedef struct adp_mqtt_session_s {
     void                       *user_ctx;
+    uint32_t              ping_timestamp;
     MQTTContext_t                context;
     MQTTConnectInfo_t       connect_info;
     MQTTSubscribeInfo_t  *subscribe_info;
@@ -52,6 +53,7 @@ adp_result_t mqtt_add_session(adp_mqtt_session_t *session)
         if ( (s_session_db[i]->user_ctx == session->user_ctx) ||
              (s_session_db[i]->context.transportInterface.pNetworkContext->socket == session->context.transportInterface.pNetworkContext->socket) ) {
             adp_os_mutex_give(s_session_list_mutex);
+            adp_log_e("Session 0x%x already in the list", session);
             return ADP_RESULT_INVALID_PARAMETER;
         }
     }
@@ -59,12 +61,12 @@ adp_result_t mqtt_add_session(adp_mqtt_session_t *session)
         if (s_session_db[i] == NULL) {
             s_session_db[i] = session;
             adp_os_mutex_give(s_session_list_mutex);
-            adp_log_d("New MQTT session added to the list");
+            adp_log_d("New MQTT session 0x%x added to the list", session);
             return ADP_RESULT_SUCCESS;
         }
     }
     adp_os_mutex_give(s_session_list_mutex);
-    adp_log_e("Cannot add new session to the list");
+    adp_log_e("No space for new session 0x%x in the list", session);
     return ADP_RESULT_NO_SPACE_LEFT;
 }
 
@@ -81,7 +83,7 @@ adp_mqtt_session_t* mqtt_find_session_by_socket(void *socket)
         }
     }
     adp_os_mutex_give(s_session_list_mutex);
-    adp_log_d("Session not in the list");
+    adp_log_d("Session not in the list for socket 0x%x", socket);
     return NULL;
 }
 
@@ -100,7 +102,7 @@ adp_mqtt_session_t* mqtt_find_userid_by_socket(void *socket, void **userid)
     }
     *userid = NULL;
     adp_os_mutex_give(s_session_list_mutex);
-    adp_log_d("Session not in the list");
+    adp_log_d("UserId not in the list for socket 0x%x", socket);
     return NULL;
 }
 
@@ -117,7 +119,7 @@ adp_mqtt_session_t* mqtt_find_session_by_user_ctx(void *user_ctx)
         }
     }
     adp_os_mutex_give(s_session_list_mutex);
-    adp_log_d("Session not in the list");
+    adp_log_d("Session not in the list for userCtx 0x%x", user_ctx);
     return NULL;
 }
 
@@ -129,12 +131,12 @@ void mqtt_del_session(adp_mqtt_session_t* session)
         if (s_session_db[i] == session) {
             s_session_db[i] = NULL;
             adp_os_mutex_give(s_session_list_mutex);
-            adp_log_d("MQTT session is not operational any more");
+            adp_log_d("MQTT session 0x%x is not operational any more", session);
             return;
         }
     }
     adp_os_mutex_give(s_session_list_mutex);
-    adp_log_e("Session not in the list");
+    adp_log_e("Session 0x%x not in the list", session);
     return;
 }
 
@@ -142,7 +144,7 @@ static
 int32_t mqtt_network_send( NetworkContext_t *pContext, const void* pBuffer, size_t bytes )
 {
     if (!mqtt_find_session_by_socket(pContext->socket)) {
-        return 0;
+        return -1;
     }
     uint32_t sent_bytes = adp_ipnet_socket_send(pContext->socket, pBuffer, bytes);
     adp_log_dd("MQTT sent %d/%d bytes to socket 0x%x", sent_bytes, bytes, pContext->socket);
@@ -153,7 +155,7 @@ static
 int32_t mqtt_network_recv( NetworkContext_t *pContext, void* pBuffer, size_t bytes )
 {
     if (!mqtt_find_session_by_socket(pContext->socket)) {
-        return 0;
+        return -1; /* Notify MQTT about an error */
     }
     uint32_t recv_bytes = adp_ipnet_socket_recv(pContext->socket, pBuffer, bytes);
     if (recv_bytes) {
@@ -175,7 +177,6 @@ void mqtt_eventCallback(MQTTContext_t *pContext, MQTTPacketInfo_t *pPacketInfo, 
         result.command    = ADP_MQTT_DO_SUBSCRIBE;
         result.user_ctx   = session->user_ctx;
         result.status     = ADP_RESULT_SUCCESS;
-        result.subcode    = 0;
         adp_topic_publish(ADP_TOPIC_MQTT_CMD_STATUS, &result, sizeof(adp_mqtt_cmd_status_t), ADP_TOPIC_PRIORITY_HIGH);
         return;
     }
@@ -224,7 +225,7 @@ adp_mqtt_session_t* adp_mqtt_session_alloc(void* user_ctx, void* socket)
 {
     adp_mqtt_session_t *session;
 
-    session = adp_os_malloc(sizeof(adp_mqtt_session_t)); // FIXME remember to free memory in deinit TODO
+    session = adp_os_malloc(sizeof(adp_mqtt_session_t));
     ADP_ASSERT(session, "Unable to allocate memory for MQTT session");
     memset(session, 0x00, sizeof(adp_mqtt_session_t));
 
@@ -257,7 +258,7 @@ adp_mqtt_session_t* adp_mqtt_session_alloc(void* user_ctx, void* socket)
         session = NULL;
     } else {
         if (mqtt_add_session(session) != ADP_RESULT_SUCCESS) {
-            adp_log_e("MQTT alloc result is %d [%s]", core_mqtt_status, MQTT_Status_strerror(core_mqtt_status));
+            adp_log_e("MQTT unable to put session 0x%x into the list", session);
             adp_mqtt_session_free(session);
             session = NULL;
         }
@@ -294,6 +295,7 @@ adp_result_t mqtt_do_broker_connect(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_
     session->connect_info.clientIdentifierLength = strlen(connect-> client_id);
     session->connect_info.pPassword              = connect->password;
     session->connect_info.pUserName              = connect->username;
+    session->ping_timestamp                      = adp_os_uptime();
 
     MQTTStatus_t core_mqtt_status = MQTT_Connect(&session->context,
                                                  &session->connect_info,
@@ -359,7 +361,7 @@ adp_result_t mqtt_do_disconnect(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_t* c
 {
     adp_mqtt_session_t *session = mqtt_find_session_by_user_ctx(cmd_data->user_ctx);
     if (!session) {
-        result->status = ADP_RESULT_FAILED;
+        result->status  = ADP_RESULT_FAILED;
         return result->status;
     }
 
@@ -424,6 +426,7 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 
     result.command  = cmd->command;
     result.user_ctx = cmd->user_ctx;
+    result.subcode  = 0xADFF; // Internal ADP result code, it means no MQTT subcode provided
 
     switch (cmd->command) {
     case ADP_MQTT_DO_CONNECT:
@@ -498,7 +501,7 @@ void mqtt_timer_cb(adp_os_timer_t timer_obj)
         if (!s_session_db[i])
             continue;
         // Check ping settings
-        if (seconds_counter % s_session_db[i]->connect_info.keepAliveSeconds == 0) {
+        if ((seconds_counter + s_session_db[i]->ping_timestamp) % s_session_db[i]->connect_info.keepAliveSeconds == 0) {
             adp_mqtt_cmd_t cmd;
             cmd.command  = ADP_MQTT_DO_BROKER_PING;
             cmd.user_ctx = s_session_db[i]->user_ctx;

@@ -29,7 +29,6 @@
 
 #ifdef ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED
 
-#define ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE          50
 
 typedef struct {
     const char     *caller_name;
