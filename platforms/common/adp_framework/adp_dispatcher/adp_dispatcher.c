@@ -168,7 +168,7 @@ adp_result_t adp_topic_publish(uint32_t topic_id, const void * data, uint32_t da
             } else {
                 msg.data = adp_os_malloc(data_length);
                 if (!msg.data) {
-                    return ADP_RESULT_NO_SPACE_LEFT;
+                    return ADP_RESULT_MALLOC_FAILED;
                 }
                 memcpy(msg.data, data, data_length);
             }
@@ -182,7 +182,7 @@ adp_result_t adp_topic_publish(uint32_t topic_id, const void * data, uint32_t da
                 }
                 adp_log_e("Failed to publish to 0x%08x '%s' size %d", topic_id,
                         dispatcher_table[i].topic_name, data_length);
-                return ADP_RESULT_FAILED;
+                return ADP_RESULT_NO_SPACE_LEFT;
             }
             return ADP_RESULT_SUCCESS;
         }
