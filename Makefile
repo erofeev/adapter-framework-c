@@ -84,8 +84,10 @@ announce:
 	@echo ""
 	@echo "Building..."
 
-build: announce | $(APP)
-	@echo "Size:"
+build: announce | $(OBJS) $(APP)
+	@echo "ADP Info:"
+	@size $(OBJS) | grep adp
+	@echo "Total Info:"
 	@size $(APP)
 	@echo "Done."
 	@echo 

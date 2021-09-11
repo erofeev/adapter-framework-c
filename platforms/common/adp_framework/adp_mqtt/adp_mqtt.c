@@ -177,6 +177,7 @@ void mqtt_eventCallback(MQTTContext_t *pContext, MQTTPacketInfo_t *pPacketInfo, 
         result.command    = ADP_MQTT_DO_SUBSCRIBE;
         result.user_ctx   = session->user_ctx;
         result.status     = ADP_RESULT_SUCCESS;
+        result.subcode    = 0xADFF;
         adp_topic_publish(ADP_TOPIC_MQTT_CMD_STATUS, &result, sizeof(adp_mqtt_cmd_status_t), ADP_TOPIC_PRIORITY_HIGH);
         return;
     }
@@ -199,6 +200,7 @@ void mqtt_eventCallback(MQTTContext_t *pContext, MQTTPacketInfo_t *pPacketInfo, 
     ADP_ASSERT(topic, "Unable to store incoming data");
     memset(topic, 0x00, event_size);
 
+    topic->user_ctx        = session->user_ctx;
     topic->session         = session;
     topic->topic_name_size = recv_topic_name_size + 1; // Null terminator
     topic->payload_size    = recv_payload_size;        // Null terminator is present for redundancy but not included in size
@@ -371,17 +373,14 @@ adp_result_t mqtt_do_disconnect(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_t* c
     mqtt_del_session(session);
 
     MQTTStatus_t core_mqtt_status = MQTT_Disconnect(&session->context);
+    result->status  = ADP_RESULT_SUCCESS;
     result->subcode = core_mqtt_status;
 
     adp_mqtt_session_free(session);
 
     if( core_mqtt_status != MQTTSuccess ) {
         adp_log_d("MQTT disconnect result is %d [%s]", core_mqtt_status, MQTT_Status_strerror(core_mqtt_status));
-        result->status = ADP_RESULT_FAILED;
-    } else {
-        result->status = ADP_RESULT_SUCCESS;
     }
-
     return result->status;
 }
 
@@ -394,7 +393,7 @@ int mqtt_socket_monitor_io(uint32_t topic_id, void* data, uint32_t len)
 
     if ( (!session) || (!user_ctx) ){
         adp_log_dd("Socket does not belong to MQTT session, topic 0x%x on socket 0x%x", topic_id, *socket);
-        return ADP_RESULT_SUCCESS;
+        return ADP_RESULT_FAILED;
     }
 
     // Notify users on disconnection if SOCKET closed
@@ -442,6 +441,7 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
             adp_log_d("MQTT - DO_SUBSCRIBE");
             if (ADP_RESULT_SUCCESS == mqtt_do_subscribe(&result, (adp_mqtt_cmd_t*)data)) {
                 // Do not notify user, because ACK should be received and only then we notify the user
+                // FIXME we need to create a timer to check if ACK is received, or we have to send failed to users
                 return ADP_RESULT_SUCCESS;
             }
         }
@@ -480,11 +480,16 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
         {
             adp_log_d("MQTT - DO_DISCONNECT");
             mqtt_do_disconnect(&result, (adp_mqtt_cmd_t*)data);
+            if (result.status != ADP_RESULT_SUCCESS) {
+                // Not in the list, so it's already disconnected and user already notified about that
+                return ADP_RESULT_SUCCESS;
+            }
         }
         break;
     default:
         adp_log_e("Unknown MQTT cmd #%d", cmd->command);
         result.status = ADP_RESULT_INVALID_PARAMETER;
+        return ADP_RESULT_FAILED;
         break;
     }
 
@@ -508,7 +513,7 @@ void mqtt_timer_cb(adp_os_timer_t timer_obj)
             cmd.command  = ADP_MQTT_DO_BROKER_PING;
             cmd.user_ctx = s_session_db[i]->user_ctx;
             // Request us to ping the broker
-        //FIXME NO PINGS FOR DEBUG    adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &cmd, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_HIGH);
+            adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &cmd, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_HIGH);
         }
     }
     adp_os_mutex_give(s_session_list_mutex);

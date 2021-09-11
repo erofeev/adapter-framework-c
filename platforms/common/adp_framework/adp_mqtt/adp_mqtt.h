@@ -13,11 +13,11 @@
 
 typedef enum {
     ADP_MQTT_DO_CONNECT              = 0x00000001,
-    ADP_MQTT_DO_SUBSCRIBE            = 0x00000003,
-    ADP_MQTT_DO_PUBLISH              = 0x00000004,
-    ADP_MQTT_DO_PROCESS_LOOP         = 0x00000005,
-    ADP_MQTT_DO_BROKER_PING          = 0x00000006,
-    ADP_MQTT_DO_DISCONNECT           = 0x00000007,
+    ADP_MQTT_DO_SUBSCRIBE            = 0x00000002,
+    ADP_MQTT_DO_PUBLISH              = 0x00000003,
+    ADP_MQTT_DO_PROCESS_LOOP         = 0x00000004,
+    ADP_MQTT_DO_BROKER_PING          = 0x00000005,
+    ADP_MQTT_DO_DISCONNECT           = 0x00000006,
 } adp_mqtt_command_code_t;
 
 

@@ -8,9 +8,6 @@
 #define ADAPTERS_ADP_CONSOLE_H_
 
 
-#define ADP_CONSOLE_ECHO_ENABLED       0
-
-
 
 void adp_console_task(void* params);
 

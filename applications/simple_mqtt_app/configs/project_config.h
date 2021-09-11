@@ -11,7 +11,7 @@
 #define ADP_OS_MODULE_NO_DEBUG
 #define ADP_OS_DEFAULT_QUEUE_PUT_TIMEOUT_MS         100
 #define ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED
-#define ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE         200
+#define ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE          80
 
 // APP Dispatcher settings
 #define ADP_DISPATCHER_MODULE_NO_DEBUG
@@ -23,6 +23,7 @@
 // APP Console settings
 #define ADP_CONSOLE_MODULE_NO_DEBUG
 #define ADP_CONSOLE_MAX_CMD_SIZE                     40
+#define ADP_CONSOLE_ECHO_ENABLED                      0
 
 // APP Network settings
 #undef ADP_TCPIP_MODULE_NO_DEBUG

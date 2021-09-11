@@ -25,7 +25,7 @@ HANDLING_CMD(HELP)
     adp_log("\t db                         - print DB table");
     adp_log("\t netstat                    - print network runtime stats");
     adp_log("\t os                         - print OS runtime stats");
-    adp_log("\t mstart                     - start an MQTT client");
+    adp_log("\t mstart  <clientname>       - start an MQTT client");
 }
 
 ADP_WEAK

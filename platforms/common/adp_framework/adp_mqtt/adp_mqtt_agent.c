@@ -14,6 +14,7 @@
 #include "app_mqtt.h"
 
 
+
 adp_mqtt_client_t *s_mqtt_client_db[ADP_MQTT_SESSIONS_MAX_NUMBER];
 
 
@@ -83,39 +84,8 @@ void do_mqtt_disconnect(adp_mqtt_client_t *user_ctx)
     adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_disconnect, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
 }
 
-// Handling: Net is UP or DOWN
-int net_status_handler(uint32_t topic_id, void* data, uint32_t len)
-{
-    static adp_ipnet_status_t prev_status = ADP_IPNET_STACK_NA;
-    adp_ipnet_status_t status = *(adp_ipnet_status_t*)data;
-
-    if (status == prev_status) {
-        // DHCP renew happened
-        return ADP_RESULT_SUCCESS;
-    }
-    adp_log("Status: Network is %s", (status == ADP_IPNET_STACK_DOWN) ? "down" : "up");
-
-    switch (status) {
-    case ADP_IPNET_STACK_UP:
-        {
-            // Nothing to do
-        }
-        break;
-    case ADP_IPNET_STACK_DOWN:
-        {
-            // Nothing to do
-        }
-        break;
-    default:
-        break;
-    }
-
-    prev_status = status;
-    return ADP_RESULT_SUCCESS;
-}
-
 // Handling: Socket connection success or not
-int net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
+int net_agent_status_handler(uint32_t topic_id, void* data, uint32_t len)
 {
     adp_ipnet_cmd_status_t *cmd_status = (adp_ipnet_cmd_status_t*)data;
     adp_mqtt_client_t          *client = (adp_mqtt_client_t*)cmd_status->user_ctx;
@@ -125,7 +95,7 @@ int net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
             (cmd_status->status == ADP_RESULT_SUCCESS) ? "SUCESS" : "FAILED",
             cmd_status->subcode);
 
-    // Process items related to our socket
+    // Filter out sockets which not created by this module
     int found = 0;
     for (int i = 0; i < ADP_MQTT_SESSIONS_MAX_NUMBER; i++) {
         if (s_mqtt_client_db[i] == cmd_status->user_ctx) {
@@ -134,7 +104,7 @@ int net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
         }
     }
     if (!found)
-        return ADP_RESULT_SUCCESS;
+        return ADP_RESULT_FAILED;
 
     switch (cmd_status->command) {
     case ADP_IPNET_DO_TCP_CONNECT:
@@ -149,6 +119,7 @@ int net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
         break;
     case ADP_IPNET_DO_TCP_SHUTDOWN:
         {
+            // TODO add an mqtt backoff period
             do_tcp_connect(cmd_status->user_ctx);
         }
         break;
@@ -161,7 +132,7 @@ int net_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
 
 
 // Handling: MQTT session
-int mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
+int mqtt_agent_status_handler(uint32_t topic_id, void* data, uint32_t len)
 {
     adp_mqtt_cmd_status_t *cmd_status = (adp_mqtt_cmd_status_t*)data;
     adp_mqtt_client_t         *client = (adp_mqtt_client_t*)cmd_status->user_ctx;
@@ -179,7 +150,6 @@ int mqtt_cmd_status_handler(uint32_t topic_id, void* data, uint32_t len)
                 // Subscribe for topics
                 do_mqtt_subscribe(cmd_status->user_ctx);
             } else {
-                // Terminate the socket
                 do_tcp_shutdown(cmd_status->user_ctx);
             }
         }
@@ -216,9 +186,9 @@ void adp_mqtt_agent_start(adp_mqtt_client_t *client)
 
     if (!cnt) {
         // Subscribe for network Up/Down events
-        adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS,      &net_status_handler,      "ADP.MQTT.Agent.IPStatus");
-        adp_topic_subscribe(ADP_TOPIC_IPNET_CMD_STATUS,    &net_cmd_status_handler,  "ADP.MQTT.Agent.IpCmdStatus");
-        adp_topic_subscribe(ADP_TOPIC_MQTT_CMD_STATUS,     &mqtt_cmd_status_handler, "ADP.MQTT.Agent.MqttCmdStatus");
+        adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS,      &net_agent_status_handler,  "ADP.MQTT.Agent.IPStatus");
+        adp_topic_subscribe(ADP_TOPIC_IPNET_CMD_STATUS,    &net_agent_status_handler,  "ADP.MQTT.Agent.IpCmdStatus");
+        adp_topic_subscribe(ADP_TOPIC_MQTT_CMD_STATUS,     &mqtt_agent_status_handler, "ADP.MQTT.Agent.MqttCmdStatus");
         memset(s_mqtt_client_db, 0x00, sizeof(s_mqtt_client_db));
     }
     if (cnt == ADP_MQTT_SESSIONS_MAX_NUMBER) {

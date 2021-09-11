@@ -38,16 +38,50 @@ void print_info(void* params)
     }
 }
 
+// Handling: Net is UP or DOWN
+int net_status_handler(uint32_t topic_id, void* data, uint32_t len)
+{
+    static adp_ipnet_status_t prev_status = ADP_IPNET_STACK_NA;
+    adp_ipnet_status_t status = *(adp_ipnet_status_t*)data;
+
+    if (status == prev_status) {
+        // DHCP renew happened
+        return ADP_RESULT_SUCCESS;
+    }
+    adp_log("Status: Network is %s", (status == ADP_IPNET_STACK_DOWN) ? "down" : "up");
+
+    switch (status) {
+    case ADP_IPNET_STACK_UP:
+        {
+            // Nothing to do
+        }
+        break;
+    case ADP_IPNET_STACK_DOWN:
+        {
+            // Nothing to do
+        }
+        break;
+    default:
+        break;
+    }
+
+    prev_status = status;
+    return ADP_RESULT_SUCCESS;
+}
+
+
 int app_mqtt_incoming_handler(uint32_t topic_id, void* data, uint32_t len)
 {
     adp_mqtt_received_topic_t *topic_data = data;
+    adp_mqtt_client_t *client = (adp_mqtt_client_t *)topic_data->user_ctx;
 
-    adp_log("INCOMING DATA Topic [%s], Data [%s]", &topic_data->buffer[0], &topic_data->buffer[topic_data->topic_name_size]);
+    adp_log("Client [%s] INCOMING DATA Topic [%s], Data [%s]", client->name, &topic_data->buffer[0], &topic_data->buffer[topic_data->topic_name_size]);
 
     return ADP_RESULT_SUCCESS;
 }
 
 int main(void) {
+    adp_log("Build date [%s %s]", __DATE__, __TIME__);
     adp_log("Creating the World");
 
     // Example of user task creation
@@ -67,7 +101,8 @@ int main(void) {
     adp_mqtt_initialize(mqtt_dispatcher);
 
     // Subscribe for all MQTT topics
-    adp_topic_subscribe(ADP_TOPIC_MQTT_INCOMING_TOPIC, &app_mqtt_incoming_handler, "USER app_mqtt_incoming_handler");
+    adp_topic_subscribe(ADP_TOPIC_MQTT_INCOMING_TOPIC, &app_mqtt_incoming_handler, "USER Print MQTT topics");
+    adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS,      &net_status_handler,        "USER Net Up/Down");
 
     adp_os_start();
 
