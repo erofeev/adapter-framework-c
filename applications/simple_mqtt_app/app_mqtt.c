@@ -13,10 +13,14 @@
 
 adp_mqtt_client_t client_template = {
         .name                = "",
-        .hostname            = "test.mosquitto.org",
+        .hostname            = "test.mosquitto.org",// IP: 5.196.95.208
+        .ip_octet1           = 5,
+        .ip_octet2           = 196,
+        .ip_octet3           = 95,
+        .ip_octet4           = 208,
         .port                = 1883,
         .clean_session       = 1,
-        .keep_alive_seconds  = 20,
+        .keep_alive_seconds  = 100,
         .client_id           = "",
         .username            = "TEST",
         .password            = "TEST",
@@ -35,12 +39,26 @@ adp_mqtt_client_t client_template = {
 
 };
 
+int app_mqtt_incoming_handler(uint32_t topic_id, void* data, uint32_t len)
+{
+    adp_mqtt_received_topic_t *topic_data = data;
+    adp_mqtt_client_t *client = (adp_mqtt_client_t *)topic_data->user_ctx;
+
+    adp_log("Client [%s] INCOMING DATA Topic [%s], Data [%s]", client->name, &topic_data->buffer[0], &topic_data->buffer[topic_data->topic_name_size]);
+
+    return ADP_RESULT_SUCCESS;
+}
 
 void start_mqtt_client(const char *client_name)
 {
+    static int init = 0;
     if (!client_name) {
         adp_log_e("Client name is NULL. Do nothing");
         return;
+    }
+    if (!init) {
+        adp_topic_subscribe(ADP_TOPIC_MQTT_INCOMING_TOPIC, &app_mqtt_incoming_handler, "USER Print MQTT topics");
+        init = 1;
     }
 
     // Clone client_1 which is used as a template for new clients in this example project
@@ -53,6 +71,7 @@ void start_mqtt_client(const char *client_name)
     ADP_ASSERT(new_client->name,"No memory left");
     memcpy(new_client->name, client_name, strlen(client_name) + 1);
     new_client->client_id = new_client->name;
+    new_client->keep_alive_seconds = 30 + adp_os_rand() % 360;
 
     adp_mqtt_agent_start(new_client);
 

@@ -61,7 +61,7 @@ adp_result_t mqtt_add_session(adp_mqtt_session_t *session)
         if (s_session_db[i] == NULL) {
             s_session_db[i] = session;
             adp_os_mutex_give(s_session_list_mutex);
-            adp_log_d("New MQTT session 0x%x added to the list", session);
+            adp_log_d("New MQTT session 0x%x (userCtx 0x%x) added to the list", session, session->user_ctx);
             return ADP_RESULT_SUCCESS;
         }
     }
@@ -432,13 +432,13 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
     switch (cmd->command) {
     case ADP_MQTT_DO_CONNECT:
         {
-            adp_log_d("MQTT - DO_CONNECT");
+            adp_log_d("MQTT - DO_CONNECT userCtx 0x%x", cmd->user_ctx);
             mqtt_do_broker_connect(&result, (adp_mqtt_cmd_t*)data);
         }
         break;
     case ADP_MQTT_DO_SUBSCRIBE:
         {
-            adp_log_d("MQTT - DO_SUBSCRIBE");
+            adp_log_d("MQTT - DO_SUBSCRIBE userCtx 0x%x", cmd->user_ctx);
             if (ADP_RESULT_SUCCESS == mqtt_do_subscribe(&result, (adp_mqtt_cmd_t*)data)) {
                 // Do not notify user, because ACK should be received and only then we notify the user
                 // FIXME we need to create a timer to check if ACK is received, or we have to send failed to users
@@ -455,7 +455,7 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
             if (session->context.connectStatus != MQTTConnected) {
                 return ADP_RESULT_SUCCESS;
             }
-            adp_log_d("MQTT - DO_PROCESS_LOOP");
+            adp_log_d("MQTT - DO_PROCESS_LOOP userCtx 0x%x", cmd->user_ctx);
             MQTT_ProcessLoop(&session->context, ADP_MQTT_PROCESS_LOOP_TIMEOUT_MS);
             // No status for this command type
             return ADP_RESULT_SUCCESS;
@@ -470,7 +470,7 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
             if (session->context.connectStatus != MQTTConnected) {
                 return ADP_RESULT_SUCCESS;
             }
-            adp_log_d("MQTT - DO_BROKER_PING");
+            adp_log_d("MQTT - DO_BROKER_PING userCtx 0x%x", cmd->user_ctx);
             MQTT_Ping(&session->context);
             // No status for this command type
             return ADP_RESULT_SUCCESS;
@@ -478,9 +478,9 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
         break;
     case ADP_MQTT_DO_DISCONNECT:
         {
-            adp_log_d("MQTT - DO_DISCONNECT");
+            adp_log_d("MQTT - DO_DISCONNECT userCtx 0x%x", cmd->user_ctx);
             mqtt_do_disconnect(&result, (adp_mqtt_cmd_t*)data);
-            if (result.status != ADP_RESULT_SUCCESS) {
+            if (ADP_RESULT_SUCCESS != mqtt_do_disconnect(&result, (adp_mqtt_cmd_t*)data)) {
                 // Not in the list, so it's already disconnected and user already notified about that
                 return ADP_RESULT_SUCCESS;
             }

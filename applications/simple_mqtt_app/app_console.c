@@ -5,6 +5,8 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 #include "adp_dispatcher.h"
 #include "adp_logging.h"
@@ -59,12 +61,16 @@ HANDLING_CMD(OS)
 
 HANDLING_CMD(START_MQTT)
 {
+    static int cnt = 1;
     // Start MQTT client
     if (argc) {
-        char *cmd_arg = adp_os_malloc(strlen(adp_console_get_next_arg(data)) + 1);
-        memcpy(cmd_arg, adp_console_get_next_arg(data), strlen(adp_console_get_next_arg(data)) + 1);
-        start_mqtt_client(cmd_arg);
-        adp_os_free(cmd_arg);
+        int i = atoi(adp_console_get_next_arg(data));
+        char template[20];
+        for (int k = 0; k < i; k++) {
+            snprintf(template, 20, "Client#%d", cnt + k);
+            start_mqtt_client(template);
+        }
+        cnt += i;
     } else {
         adp_log_e("You need to specify client name");
     }

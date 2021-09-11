@@ -13,7 +13,12 @@
 #include "adp_tcpip.h"
 #include "app_mqtt.h"
 
-
+#ifdef ADP_MQTT_AGENT_MODULE_NO_DEBUG
+    #undef  adp_log_d
+    #undef  adp_log_dd
+    #define adp_log_d(...)
+    #define adp_log_dd(...)
+#endif
 
 adp_mqtt_client_t *s_mqtt_client_db[ADP_MQTT_SESSIONS_MAX_NUMBER];
 
@@ -25,7 +30,7 @@ void do_tcp_connect(adp_mqtt_client_t *user_ctx)
                .user_ctx          = (void*)user_ctx,
                .command           = ADP_IPNET_DO_TCP_CONNECT,
                .connect.port      = user_ctx->port,
-               .connect.hostname  = "test.mosquitto.org",
+               .connect.hostname  = user_ctx->hostname,
                .connect.ip_octet1 = user_ctx->ip_octet1,
                .connect.ip_octet2 = user_ctx->ip_octet2,
                .connect.ip_octet3 = user_ctx->ip_octet3,
@@ -89,11 +94,6 @@ int net_agent_status_handler(uint32_t topic_id, void* data, uint32_t len)
 {
     adp_ipnet_cmd_status_t *cmd_status = (adp_ipnet_cmd_status_t*)data;
     adp_mqtt_client_t          *client = (adp_mqtt_client_t*)cmd_status->user_ctx;
-    adp_log_d("Status: IPNET client [%s] cmd #%d executed with result %s (subcode: %d)",
-            client->name,
-            cmd_status->command,
-            (cmd_status->status == ADP_RESULT_SUCCESS) ? "SUCESS" : "FAILED",
-            cmd_status->subcode);
 
     // Filter out sockets which not created by this module
     int found = 0;
@@ -110,15 +110,19 @@ int net_agent_status_handler(uint32_t topic_id, void* data, uint32_t len)
     case ADP_IPNET_DO_TCP_CONNECT:
         {
             if (cmd_status->status == ADP_RESULT_SUCCESS) {
+                adp_log_d("MQTT client [%s] TCP connect completed", client->name);
                 // Start establishing MQTT session
                 do_mqtt_connect(cmd_status->user_ctx, cmd_status->socket, 2000);
             } else {
-                do_tcp_shutdown(cmd_status->user_ctx);
+                adp_log_d("MQTT client [%s] TCP connect failed", client->name);
+                // Nothing to disconnect we need to start tcp_connect again after a backoff
+                do_tcp_connect(cmd_status->user_ctx);
             }
         }
         break;
     case ADP_IPNET_DO_TCP_SHUTDOWN:
         {
+            adp_log_d("MQTT client [%s] TCP shutdown completed", client->name);
             // TODO add an mqtt backoff period
             do_tcp_connect(cmd_status->user_ctx);
         }
@@ -136,11 +140,6 @@ int mqtt_agent_status_handler(uint32_t topic_id, void* data, uint32_t len)
 {
     adp_mqtt_cmd_status_t *cmd_status = (adp_mqtt_cmd_status_t*)data;
     adp_mqtt_client_t         *client = (adp_mqtt_client_t*)cmd_status->user_ctx;
-     adp_log("Status: MQTT client [%s] cmd #%d executed with result %s (subcode: %d)",
-            client->name,
-            cmd_status->command,
-            (cmd_status->status == ADP_RESULT_SUCCESS) ? "SUCESS" : "FAILED",
-            cmd_status->subcode);
 
     switch (cmd_status->command) {
     case ADP_MQTT_DO_CONNECT:
@@ -162,13 +161,14 @@ int mqtt_agent_status_handler(uint32_t topic_id, void* data, uint32_t len)
                 adp_log_d("============================================");
             } else {
                 // Send DISCONNECT, let's try to clean up everything and try again
+                adp_log_d("MQTT client [%s] MQTT failed to subscribe", client->name);
                 do_mqtt_disconnect(cmd_status->user_ctx);
             }
         }
         break;
     case ADP_MQTT_DO_DISCONNECT:
         {
-             adp_log_d("[%s] MQTT SUCCESFULLY DISCONNECTED", client->name);
+            adp_log_d("MQTT client [%s] MQTT terminated", client->name);
              do_tcp_shutdown(cmd_status->user_ctx);
         }
         break;

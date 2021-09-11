@@ -70,16 +70,6 @@ int net_status_handler(uint32_t topic_id, void* data, uint32_t len)
 }
 
 
-int app_mqtt_incoming_handler(uint32_t topic_id, void* data, uint32_t len)
-{
-    adp_mqtt_received_topic_t *topic_data = data;
-    adp_mqtt_client_t *client = (adp_mqtt_client_t *)topic_data->user_ctx;
-
-    adp_log("Client [%s] INCOMING DATA Topic [%s], Data [%s]", client->name, &topic_data->buffer[0], &topic_data->buffer[topic_data->topic_name_size]);
-
-    return ADP_RESULT_SUCCESS;
-}
-
 int main(void) {
     adp_log("Build date [%s %s]", __DATE__, __TIME__);
     adp_log("Creating the World");
@@ -88,21 +78,20 @@ int main(void) {
     adp_os_start_task("APP Info-print", &print_info, 128, 0, NULL);
 
     // Run console and subscribe on the CLI cmd execution topic
-    adp_dispatcher_handle_t low_prio_dispatcher = adp_dispatcher_create("CLI", 0, 25);
+    adp_dispatcher_handle_t low_prio_dispatcher = adp_dispatcher_create("CLI", 0, 80);
     adp_os_start_task("APP Console", &adp_console_task, 128, 0, low_prio_dispatcher);
     adp_topic_subscribe(ADP_TOPIC_CLI_EXECUTE_CMD, &app_cmd_handler, "USER app_cmd_handler");
 
     // Initialize TCP/IP stack
-    adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create("IPNET", adp_os_get_max_prio() - 2, 40);
+    adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create("IPNET", adp_os_get_max_prio() - 2, 120);
     adp_ipnet_initialize(network_dispatcher);
 
     // Initialize MQTT
     adp_dispatcher_handle_t mqtt_dispatcher    = adp_dispatcher_create("MQTT",  adp_os_get_max_prio() - 3, 40);
     adp_mqtt_initialize(mqtt_dispatcher);
 
-    // Subscribe for all MQTT topics
-    adp_topic_subscribe(ADP_TOPIC_MQTT_INCOMING_TOPIC, &app_mqtt_incoming_handler, "USER Print MQTT topics");
-    adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS,      &net_status_handler,        "USER Net Up/Down");
+    // Subscribe
+    adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS, &net_status_handler, "USER Net Up/Down");
 
     adp_os_start();
 

@@ -90,7 +90,7 @@ build: announce | $(OBJS) $(APP)
 	@echo "ADP Info:"
 	@size $(OBJS) | grep 'adp\|hex	filename'
 	@echo "Other Info:"
-	@size $(OBJS) | grep -v 'adp\|hex	filename'
+	@size $(OBJS) | grep -v 'applications\|adp\|hex	filename'
 	@echo "Total Info:"
 	@size $(APP)
 	@echo "Done."

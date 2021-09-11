@@ -139,7 +139,7 @@ adp_result_t ipnet_add_socket(void *user_ctx, adp_socket_t socket)
         if ( (s_socket_db[i].user_ctx == user_ctx) ||
              (s_socket_db[i].socket   == socket  ) ) {
             adp_os_mutex_give(s_socket_list_mutex);
-            adp_log_e("Socket 0x%x already in the list", socket);
+            adp_log_e("Socket 0x%x already in the list for userCtx 0x%x", socket, user_ctx);
             return ADP_RESULT_INVALID_PARAMETER;
         }
     }
@@ -148,7 +148,7 @@ adp_result_t ipnet_add_socket(void *user_ctx, adp_socket_t socket)
             s_socket_db[i].socket   = socket;
             s_socket_db[i].user_ctx = user_ctx;
             adp_os_mutex_give(s_socket_list_mutex);
-            adp_log_dd("New socket 0x%x added to the list", socket);
+            adp_log_dd("New socket 0x%x added to the list for userCxt 0x%x", socket, user_ctx);
             return ADP_RESULT_SUCCESS;
         }
     }
@@ -168,7 +168,7 @@ adp_socket_t* ipnet_find_socket_by_user_ctx(void *user_ctx)
         }
     }
     adp_os_mutex_give(s_socket_list_mutex);
-    adp_log_e("Socket not in the list");
+    adp_log_e("Socket not in the list for userCtx 0x%x", user_ctx);
     return NULL;
 }
 
@@ -286,7 +286,7 @@ static
 void ipnet_client_socket_wakeup_cb(adp_socket_t socket)
 {
     if (!ipnet_is_socket_in_list(socket)) {
-        adp_log_d("Socket wakeup received for socket that is closing");
+        adp_log_dd("Socket wakeup received for socket that is closing");
     }
     if (pdTRUE != FreeRTOS_issocketconnected(socket)) {
         adp_log_dd("Disconnect on socket 0x%x", socket);
@@ -311,6 +311,7 @@ adp_result_t ipnet_do_tcp_connect(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_
 
     if (!connect) {
         result->status  = ADP_RESULT_FAILED;
+        adp_log_e("Connect is NULL, userCtx 0x%x", cmd_data->user_ctx);
         return ADP_RESULT_FAILED;
     }
 
@@ -318,6 +319,7 @@ adp_result_t ipnet_do_tcp_connect(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_
     xSocket = adp_ipnet_socket_alloc(ADP_SOCKET_TCP);
     if (!xSocket) {
         result->status  = ADP_RESULT_FAILED;
+        adp_log_e("Socket allocation failed, userCtx 0x%x", cmd_data->user_ctx);
         return ADP_RESULT_FAILED;
     }
 
@@ -338,6 +340,7 @@ adp_result_t ipnet_do_tcp_connect(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_
         // Failed to connect to the server
         result->status  = ADP_RESULT_FAILED;
         result->subcode = status;
+        adp_log_d("Failed to connect, userCtx 0x%x", cmd_data->user_ctx);
         adp_ipnet_socket_free(xSocket);
         return ADP_RESULT_FAILED;
     }
@@ -353,15 +356,17 @@ adp_result_t ipnet_do_tcp_connect(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_
         result->status  = ADP_RESULT_FAILED;
         result->subcode = status;
         adp_ipnet_socket_free(xSocket);
+        adp_log_e("Failed to set sock options, userCtx 0x%x", cmd_data->user_ctx);
         return ADP_RESULT_FAILED;
     } else {
         if (ADP_RESULT_SUCCESS != ipnet_add_socket(cmd_data->user_ctx, xSocket)) {
             result->status  = ADP_RESULT_FAILED;
+            adp_log_e("Failed to add socket, userCtx 0x%x", cmd_data->user_ctx);
             adp_ipnet_socket_free(xSocket);
             return ADP_RESULT_FAILED;
         }
     }
-
+    adp_log_dd("Connected socket 0x%x, userCtx 0x%x", xSocket, cmd_data->user_ctx);
     result->socket = xSocket;
     result->status = ADP_RESULT_SUCCESS;
 
@@ -372,15 +377,15 @@ adp_result_t ipnet_do_tcp_connect(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_
 adp_result_t ipnet_do_tcp_shutdown(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_t* cmd_data)
 {
     adp_socket_t socket = ipnet_find_socket_by_user_ctx(cmd_data->user_ctx);
+    result->socket = socket;
     if (socket) {
         ipnet_del_socket(socket);
         adp_ipnet_socket_free(socket);
+        result->status = ADP_RESULT_SUCCESS;
+    } else {
+        result->status = ADP_RESULT_INVALID_PARAMETER;
     }
-
-    result->socket = socket; // Yes, it does not exist any more, but this info can be useful for user for some scenarios
-    result->status = ADP_RESULT_SUCCESS;
-
-    return ADP_RESULT_SUCCESS;
+    return result->status;
 }
 
 
@@ -398,13 +403,13 @@ int ipnet_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
     switch (cmd->command) {
     case ADP_IPNET_DO_TCP_CONNECT:
         {
-            adp_log_d("IPNET - DO_TCP_CONNECT");
+            adp_log_d("IPNET - DO_TCP_CONNECT userCtx 0x%x", cmd->user_ctx);
             ipnet_do_tcp_connect(&result, (adp_ipnet_cmd_t*)data);
         }
         break;
     case ADP_IPNET_DO_TCP_SHUTDOWN:
         {
-            adp_log_d("IPNET - DO_TCP_SHUTDOWN");
+            adp_log_d("IPNET - DO_TCP_SHUTDOWN userCtx 0x%x", cmd->user_ctx);
             ipnet_do_tcp_shutdown(&result, (adp_ipnet_cmd_t*)data);
         }
         break;
