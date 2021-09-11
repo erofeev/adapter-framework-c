@@ -40,12 +40,12 @@ int main(void) {
     adp_os_start_task("Info-print", &print_info, 128, 0, NULL);
 
     // Run console and subscribe on the CLI cmd execution topic
-    adp_dispatcher_handle_t system_dispatcher = adp_dispatcher_create(0, 25);
+    adp_dispatcher_handle_t system_dispatcher = adp_dispatcher_create("System", 0, 25);
     adp_os_start_task("Console", &adp_console_task, 128, 0, system_dispatcher);
     adp_topic_subscribe(ADP_TOPIC_CLI_EXECUTE_CMD, &app_cmd_handler, "App CMD handler");
 
     // Run TCP/IP stack
-    adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create(3, 25);
+    adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create("TCP/IP", 3, 25);
     adp_ipnet_initialize(network_dispatcher);
     adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS, &app_net_status_handler, "App NET handler");
 

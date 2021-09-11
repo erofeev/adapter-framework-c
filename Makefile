@@ -25,7 +25,7 @@ SRC_DIR_NAME += $(addprefix platforms/common/,$(COMMON_COMPONENTS))
 SRC_DIR_NAME += $(addprefix platforms/$(PLATFORM_TARGET)/,$(PLATFORM_COMPONENTS))
 
 # Default output dir
-BUILD_DIR_NAME := build
+BUILD_DIR_NAME := build/$(APP_NAME)
 
 # source files list
 SRCS := $(shell find ./$(SRC_DIR_NAME) -name '*.c')
@@ -98,7 +98,7 @@ all: build
 clean:
 	@echo
 	@echo -n Cleaning... 
-	@rm -rf $(BUILD_DIR_NAME)/*
+	@rm -rf $(BUILD_DIR_NAME)
 	@rm -rf $(APP)
 	@echo "Done."
 	@echo 

@@ -42,9 +42,9 @@ int main(void) {
 
 
     // Example of first dispatcher creation with task prio 5 and items number 25
-    adp_dispatcher_handle_t dispatcher_1 = adp_dispatcher_create(5, 25);
-    adp_dispatcher_handle_t dispatcher_2 = adp_dispatcher_create(4, 35);
-    adp_dispatcher_handle_t dispatcher_3 = adp_dispatcher_create(4, 45);
+    adp_dispatcher_handle_t dispatcher_1 = adp_dispatcher_create("1", 5, 25);
+    adp_dispatcher_handle_t dispatcher_2 = adp_dispatcher_create("2", 4, 35);
+    adp_dispatcher_handle_t dispatcher_3 = adp_dispatcher_create("3", 4, 45);
 
     // Example of adding few topics
     uint32_t topic_id   = 0x00000010;
@@ -57,7 +57,7 @@ int main(void) {
     adp_topic_register(dispatcher_1, 0x10000000, "");
 
     // Run console
-    adp_dispatcher_handle_t system_dispatcher = adp_dispatcher_create(0, 25);
+    adp_dispatcher_handle_t system_dispatcher = adp_dispatcher_create("System", 0, 25);
     adp_os_start_task("Console", &adp_console_task, 128, 0, system_dispatcher);
 
     // Add app handler for receiving CLI commands requested for the execution
