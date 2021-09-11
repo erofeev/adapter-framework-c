@@ -244,8 +244,9 @@ int dispatcher_add(adp_dispatcher_handle_t handle, int id)
 void dispatcher_route_to_dest(adp_os_queue_handle_t queue, const adp_generic_msg_t *msg)
 {
     int no_subscriber = 1;
-    char *name = "";
+    char *name        = "";
     uint32_t topic_id = msg->topic_id;
+    adp_result_t sum_results = 0;
 
     // Get topic_name
     for (int i = 0; i < ADP_DISPATCHER_TABLE_SIZE; ++i) {
@@ -260,12 +261,10 @@ void dispatcher_route_to_dest(adp_os_queue_handle_t queue, const adp_generic_msg
         if (topic_id == topic_target) {
             no_subscriber = 0;
             adp_log_d("Topic 0x%08x '%s' -> subscriber '%s'", topic_id, name, subscriber_table[i].dest_cb_name);
-            adp_result_t result = subscriber_table[i].dest_cb(topic_id, msg->data, msg->length);
-            if (ADP_RESULT_SUCCESS != result) {
-                adp_log_e("Topic 0x%08x '%s'-> subscriber '%s' return error %d", topic_id, name, subscriber_table[i].dest_cb_name, result);
+            sum_results |= subscriber_table[i].dest_cb(topic_id, msg->data, msg->length);
+            if (ADP_RESULT_SUCCESS != sum_results) {
+                adp_log_e("Topic 0x%08x '%s'-> out of interests for all subscribers", topic_id, name);
             }
-            // Remove compiler warnings
-            UNUSED_VAR(result);
         }
     }
     if (no_subscriber) {

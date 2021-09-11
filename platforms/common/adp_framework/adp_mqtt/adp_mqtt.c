@@ -272,6 +272,8 @@ adp_result_t mqtt_do_broker_connect(adp_mqtt_cmd_status_t *result, adp_mqtt_cmd_
     bool sessionPresent;
     adp_mqtt_cmd_connect_t *connect = (adp_mqtt_cmd_connect_t*)&cmd_data->connect;
 
+    adp_log_dd("MQTT connecting using socket 0x%x", connect->socket);
+
     // Allocate new session
     adp_mqtt_session_t *session = adp_mqtt_session_alloc(cmd_data->user_ctx, connect->socket);
 
@@ -506,7 +508,7 @@ void mqtt_timer_cb(adp_os_timer_t timer_obj)
             cmd.command  = ADP_MQTT_DO_BROKER_PING;
             cmd.user_ctx = s_session_db[i]->user_ctx;
             // Request us to ping the broker
-            adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &cmd, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_HIGH);
+        //FIXME NO PINGS FOR DEBUG    adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &cmd, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_HIGH);
         }
     }
     adp_os_mutex_give(s_session_list_mutex);

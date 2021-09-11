@@ -139,6 +139,7 @@ adp_result_t ipnet_add_socket(void *user_ctx, adp_socket_t socket)
         if ( (s_socket_db[i].user_ctx == user_ctx) ||
              (s_socket_db[i].socket   == socket  ) ) {
             adp_os_mutex_give(s_socket_list_mutex);
+            adp_log_e("Socket 0x%x already in the list", socket);
             return ADP_RESULT_INVALID_PARAMETER;
         }
     }
@@ -147,12 +148,12 @@ adp_result_t ipnet_add_socket(void *user_ctx, adp_socket_t socket)
             s_socket_db[i].socket   = socket;
             s_socket_db[i].user_ctx = user_ctx;
             adp_os_mutex_give(s_socket_list_mutex);
-            adp_log_d("New socket added to the list");
+            adp_log_dd("New socket 0x%x added to the list", socket);
             return ADP_RESULT_SUCCESS;
         }
     }
     adp_os_mutex_give(s_socket_list_mutex);
-    adp_log_e("Cannot add new socket to the list");
+    adp_log_e("Cannot add new socket 0x%x to the list", socket);
     return ADP_RESULT_NO_SPACE_LEFT;
 }
 
@@ -193,13 +194,13 @@ void ipnet_del_socket(adp_socket_t *socket)
         if (s_socket_db[i].socket == socket) {
             s_socket_db[i].socket   = NULL;
             s_socket_db[i].user_ctx = NULL;
-            adp_log_d("Socket removed from the list");
             adp_os_mutex_give(s_socket_list_mutex);
+            adp_log_dd("Socket 0x%x removed from the list", socket);
             return;
         }
     }
     adp_os_mutex_give(s_socket_list_mutex);
-    adp_log_e("Socket not in the list");
+    adp_log_e("Socket 0x%x not in the list", socket);
     return;
 }
 
@@ -226,7 +227,6 @@ adp_socket_t adp_ipnet_socket_alloc(adp_socket_option_t option)
 void adp_ipnet_socket_free(adp_socket_t socket)
 {
     if (socket) {
-        ipnet_del_socket(socket);
         // Disable monitoring
         FreeRTOS_setsockopt(socket, 0, FREERTOS_SO_WAKEUP_CALLBACK, NULL, 0);
         FreeRTOS_shutdown(socket, 0 /* not used */);
@@ -307,6 +307,8 @@ adp_result_t ipnet_do_tcp_connect(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_
     adp_ipnet_cmd_connect_t *connect = (adp_ipnet_cmd_connect_t*)&cmd_data->connect;
     struct freertos_sockaddr xRemoteAddress;
 
+    result->socket = NULL;
+
     if (!connect) {
         result->status  = ADP_RESULT_FAILED;
         return ADP_RESULT_FAILED;
@@ -346,12 +348,18 @@ adp_result_t ipnet_do_tcp_connect(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd_
                                   FREERTOS_SO_WAKEUP_CALLBACK,
                                   (void*)ipnet_client_socket_wakeup_cb,
                                   sizeof(&(ipnet_client_socket_wakeup_cb)));
-    if ( (status != pdFREERTOS_ERRNO_NONE) || (ADP_RESULT_SUCCESS != ipnet_add_socket(cmd_data->user_ctx, xSocket)) ) {
+    if (status != pdFREERTOS_ERRNO_NONE) {
         // Failed to connect to the server
         result->status  = ADP_RESULT_FAILED;
         result->subcode = status;
         adp_ipnet_socket_free(xSocket);
         return ADP_RESULT_FAILED;
+    } else {
+        if (ADP_RESULT_SUCCESS != ipnet_add_socket(cmd_data->user_ctx, xSocket)) {
+            result->status  = ADP_RESULT_FAILED;
+            adp_ipnet_socket_free(xSocket);
+            return ADP_RESULT_FAILED;
+        }
     }
 
     result->socket = xSocket;
@@ -365,9 +373,11 @@ adp_result_t ipnet_do_tcp_shutdown(adp_ipnet_cmd_status_t *result, adp_ipnet_cmd
 {
     adp_socket_t socket = ipnet_find_socket_by_user_ctx(cmd_data->user_ctx);
     if (socket) {
+        ipnet_del_socket(socket);
         adp_ipnet_socket_free(socket);
     }
 
+    result->socket = socket; // Yes, it does not exist any more, but this info can be useful for user for some scenarios
     result->status = ADP_RESULT_SUCCESS;
 
     return ADP_RESULT_SUCCESS;
@@ -383,6 +393,7 @@ int ipnet_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
 
     result.user_ctx = cmd->user_ctx;
     result.command  = cmd->command;
+    result.subcode  = 0xADFF;
 
     switch (cmd->command) {
     case ADP_IPNET_DO_TCP_CONNECT:
