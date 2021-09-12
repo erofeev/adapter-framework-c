@@ -9,10 +9,10 @@
 
 // APP OS settings
 #define ADP_OS_MODULE_NO_DEBUG
-#define ADP_HEAP_MEMORY_SIZE                  (512*1024)
+#define ADP_HEAP_MEMORY_SIZE                  (128*1024)
 #define ADP_OS_DEFAULT_QUEUE_PUT_TIMEOUT_MS         100
 #define ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED
-#define ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE         380
+#define ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE         120
 
 // APP Dispatcher settings
 #define ADP_DISPATCHER_MODULE_NO_DEBUG
@@ -35,7 +35,7 @@
 #undef ADP_MQTT_MODULE_NO_DEBUG
 #undef ADP_MQTT_AGENT_MODULE_NO_DEBUG
 #define ADP_MQTT_SESSIONS_MAX_NUMBER                 25
-#define ADP_MQTT_PROCESS_LOOP_TIMEOUT_MS            300
+#define ADP_MQTT_PROCESS_LOOP_TIMEOUT_MS            200
 
 // Topics DB
 enum app_topics_enum {
@@ -44,7 +44,7 @@ enum app_topics_enum {
     ADP_TOPIC_CLI_INPUT_STREAM                      = 0x00000001,
     ADP_TOPIC_CLI_EXECUTE_CMD                       = 0x00000002,
     // Networking TCP-UDP/IP
-    ADP_TOPIC_IPNET_IPSTATUS                        = 0x00000010,
+    ADP_TOPIC_IPNET_STATUS                          = 0x00000010,
     ADP_TOPIC_IPNET_EXECUTE_CMD                     = 0x00000011,
     ADP_TOPIC_IPNET_CMD_STATUS                      = 0x00000012,
     ADP_TOPIC_IPNET_SOCKET_RXTX_ACTIVITY            = 0x00000013,

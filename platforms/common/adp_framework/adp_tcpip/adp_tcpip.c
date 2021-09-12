@@ -125,7 +125,7 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
 
     // Publish info
     event_data[0] = adp_net_status;
-    adp_topic_publish(ADP_TOPIC_IPNET_IPSTATUS, &event_data, sizeof(event_data), ADP_TOPIC_PRIORITY_HIGH);
+    adp_topic_publish(ADP_TOPIC_IPNET_STATUS, &event_data, sizeof(event_data), ADP_TOPIC_PRIORITY_HIGH);
 }
 
 static
@@ -432,7 +432,7 @@ adp_result_t adp_ipnet_initialize(adp_dispatcher_handle_t dispatcher)
     s_socket_list_mutex = adp_os_mutex_create();
 
     // Published topics
-    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_IPSTATUS,             "IPNET.Status");
+    adp_topic_register(dispatcher, ADP_TOPIC_IPNET_STATUS,               "IPNET.Status");
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_EXECUTE_CMD,          "IPNET.ExecuteCmd");
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_CMD_STATUS,           "IPNET.CmdStatus");
     adp_topic_register(dispatcher, ADP_TOPIC_IPNET_SOCKET_RXTX_ACTIVITY, "IPNET.SocketIOActivity");

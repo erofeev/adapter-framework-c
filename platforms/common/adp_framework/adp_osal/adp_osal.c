@@ -247,6 +247,7 @@ void adp_os_get_tasks_list(char *buffer)
     vTaskList(buffer);
 }
 
+
 void adp_os_sleep(uint32_t time_ms)
 {
     vTaskDelay(pdMS_TO_TICKS(time_ms));

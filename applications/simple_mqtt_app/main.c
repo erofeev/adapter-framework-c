@@ -83,15 +83,15 @@ int main(void) {
     adp_topic_subscribe(ADP_TOPIC_CLI_EXECUTE_CMD, &app_cmd_handler, "USER app_cmd_handler");
 
     // Initialize TCP/IP stack
-    adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create("IPNET", adp_os_get_max_prio() - 2, 120);
+    adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create("IPNET", adp_os_get_max_prio() - 2, 70);
     adp_ipnet_initialize(network_dispatcher);
 
     // Initialize MQTT
-    adp_dispatcher_handle_t mqtt_dispatcher    = adp_dispatcher_create("MQTT",  adp_os_get_max_prio() - 3, 40);
+    adp_dispatcher_handle_t mqtt_dispatcher    = adp_dispatcher_create("MQTT",  adp_os_get_max_prio() - 3, 70);
     adp_mqtt_initialize(mqtt_dispatcher);
 
     // Subscribe
-    adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS, &net_status_handler, "USER Net Up/Down");
+    adp_topic_subscribe(ADP_TOPIC_IPNET_STATUS, &net_status_handler, "USER Net Up/Down");
 
     adp_os_start();
 

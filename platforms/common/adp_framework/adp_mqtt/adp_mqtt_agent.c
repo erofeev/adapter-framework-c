@@ -169,7 +169,7 @@ int mqtt_agent_status_handler(uint32_t topic_id, void* data, uint32_t len)
     case ADP_MQTT_DO_DISCONNECT:
         {
             adp_log_d("MQTT client [%s] MQTT terminated", client->name);
-             do_tcp_shutdown(cmd_status->user_ctx);
+            do_tcp_shutdown(cmd_status->user_ctx);
         }
         break;
     default:
@@ -186,7 +186,6 @@ void adp_mqtt_agent_start(adp_mqtt_client_t *client)
 
     if (!cnt) {
         // Subscribe for network Up/Down events
-        adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS,      &net_agent_status_handler,  "ADP.MQTT.Agent.IPStatus");
         adp_topic_subscribe(ADP_TOPIC_IPNET_CMD_STATUS,    &net_agent_status_handler,  "ADP.MQTT.Agent.IpCmdStatus");
         adp_topic_subscribe(ADP_TOPIC_MQTT_CMD_STATUS,     &mqtt_agent_status_handler, "ADP.MQTT.Agent.MqttCmdStatus");
         memset(s_mqtt_client_db, 0x00, sizeof(s_mqtt_client_db));

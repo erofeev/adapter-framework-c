@@ -49,12 +49,14 @@ HANDLING_CMD(DB)
 HANDLING_CMD(OS)
 {
     uint32_t uptime = adp_os_uptime_ms();
-    char *buffer = adp_os_malloc(256);
+    char *buffer = adp_os_malloc(512);
     if (buffer) {
         memset(buffer, 0x00, 256);
         adp_os_get_tasks_list(buffer);
-        adp_log("\n\r\n\r[Uptime] %lu.%03d s\n[Heap] Total: %15d\n[Heap] Free: %15d\n\nTasks stats:\n%s",
+        adp_log("\n\r\n\r[Uptime] %lu.%03d s\n[Heap] Total: %15d\n[Heap] Free:  %15d\n\nTasks stats:\n%s",
                 uptime/1000, uptime%1000, adp_os_get_total_heap_size(), adp_os_get_free_heap_size(), buffer);
+        adp_os_get_tasks_rtstats(buffer);
+        adp_log("\n\r\n\r%s\n\r", buffer);
         adp_os_free(buffer);
     }
 }
@@ -67,7 +69,7 @@ HANDLING_CMD(START_MQTT)
         int i = atoi(adp_console_get_next_arg(data));
         char template[20];
         for (int k = 0; k < i; k++) {
-            snprintf(template, 20, "Client#%d", cnt + k);
+            snprintf(template, 20, "Client#%d_x", cnt + k);
             start_mqtt_client(template);
         }
         cnt += i;

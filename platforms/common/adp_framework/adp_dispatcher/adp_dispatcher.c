@@ -246,7 +246,8 @@ void dispatcher_route_to_dest(adp_os_queue_handle_t queue, const adp_generic_msg
     int no_subscriber = 1;
     char *name        = "";
     uint32_t topic_id = msg->topic_id;
-    adp_result_t sum_results = 0;
+    adp_result_t sum_results;
+    memset(&sum_results, 0xFF, sizeof(adp_result_t));
 
     // Get topic_name
     for (int i = 0; i < ADP_DISPATCHER_TABLE_SIZE; ++i) {
@@ -261,11 +262,11 @@ void dispatcher_route_to_dest(adp_os_queue_handle_t queue, const adp_generic_msg
         if (topic_id == topic_target) {
             no_subscriber = 0;
             adp_log_d("Topic 0x%08x '%s' -> subscriber '%s'", topic_id, name, subscriber_table[i].dest_cb_name);
-            sum_results |= subscriber_table[i].dest_cb(topic_id, msg->data, msg->length);
-            if (ADP_RESULT_SUCCESS != sum_results) {
-                adp_log_e("Topic 0x%08x '%s'-> out of interests for all subscribers", topic_id, name);
-            }
+            sum_results &= subscriber_table[i].dest_cb(topic_id, msg->data, msg->length);
         }
+    }
+    if (ADP_RESULT_SUCCESS != sum_results) {
+        adp_log_e("Topic 0x%08x '%s'-> out of interests for all subscribers", topic_id, name);
     }
     if (no_subscriber) {
         adp_log_e("No subscriber found for 0x%08x '%s'", msg->topic_id, name);
@@ -321,7 +322,7 @@ adp_dispatcher_handle_t adp_dispatcher_create(const char* name, uint32_t os_prio
         memset(subscriber_table, 0x00, sizeof(subscriber_table));
     }
     // Create queue
-    adp_os_queue_handle_t queue = adp_os_queue_create(max_items, sizeof(adp_generic_msg_t)*max_items);
+    adp_os_queue_handle_t queue = adp_os_queue_create(max_items, sizeof(adp_generic_msg_t));
     if (!queue) {
         ADP_ASSERT(0, "Unable to create a queue");
         return (adp_dispatcher_handle_t)NULL;
