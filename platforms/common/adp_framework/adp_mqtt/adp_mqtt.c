@@ -479,7 +479,6 @@ int mqtt_cmd_handler(uint32_t topic_id, void* data, uint32_t len)
     case ADP_MQTT_DO_DISCONNECT:
         {
             adp_log_d("MQTT - DO_DISCONNECT userCtx 0x%x", cmd->user_ctx);
-            mqtt_do_disconnect(&result, (adp_mqtt_cmd_t*)data);
             if (ADP_RESULT_SUCCESS != mqtt_do_disconnect(&result, (adp_mqtt_cmd_t*)data)) {
                 // Not in the list, so it's already disconnected and user already notified about that
                 return ADP_RESULT_SUCCESS;
@@ -535,7 +534,7 @@ adp_result_t adp_mqtt_initialize(adp_dispatcher_handle_t dispatcher)
     adp_topic_subscribe(ADP_TOPIC_IPNET_SOCKET_DISCONNECTED,  &mqtt_socket_monitor_io, "ADP.MQTT.SVC.MonitorIO");
 
     // Start forever timer
-    adp_os_timer_t s_mqtt_timer_obj = adp_os_timer_start(1000, 1 /* auto reload */, mqtt_timer_cb);
+    adp_os_timer_t s_mqtt_timer_obj = adp_os_timer_start(1000, 1 /* auto reload */, mqtt_timer_cb, NULL);
     UNUSED_VAR(s_mqtt_timer_obj);
 
     return ADP_RESULT_SUCCESS;

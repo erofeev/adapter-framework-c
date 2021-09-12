@@ -47,7 +47,7 @@ int main(void) {
     // Run TCP/IP stack
     adp_dispatcher_handle_t network_dispatcher = adp_dispatcher_create("TCP/IP", 3, 25);
     adp_ipnet_initialize(network_dispatcher);
-    adp_topic_subscribe(ADP_TOPIC_IPNET_IPSTATUS, &app_net_status_handler, "App NET handler");
+    adp_topic_subscribe(ADP_TOPIC_IPNET_STATUS, &app_net_status_handler, "App NET handler");
 
     adp_os_start();
 

@@ -183,13 +183,18 @@ uint32_t adp_os_uptime_ms(void)
     return xTaskGetTickCount()/(configTICK_RATE_HZ/1000);
 }
 
-adp_os_timer_t adp_os_timer_start(uint32_t timeout_ms, int auto_reload, adp_os_timer_cb_t callback)
+void* adp_os_timer_get_user_ctx(const adp_os_timer_t timer_obj)
+{
+    return pvTimerGetTimerID(timer_obj);
+}
+
+adp_os_timer_t adp_os_timer_start(uint32_t timeout_ms, int auto_reload, adp_os_timer_cb_t callback,void *user_ctx)
 {
     if (!timeout_ms)
         return NULL;
 
     adp_os_timer_t t = (adp_os_timer_t)xTimerCreate("", timeout_ms * portTICK_PERIOD_MS,
-                                                    (UBaseType_t)auto_reload, NULL,
+                                                    (UBaseType_t)auto_reload, user_ctx,
                                                     (TimerCallbackFunction_t)callback);
     if (!t) {
         ADP_ASSERT(t, "Unable to create a timer");

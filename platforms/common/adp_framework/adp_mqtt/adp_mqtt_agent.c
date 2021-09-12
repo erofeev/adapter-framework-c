@@ -89,6 +89,26 @@ void do_mqtt_disconnect(adp_mqtt_client_t *user_ctx)
     adp_topic_publish(ADP_TOPIC_MQTT_EXECUTE_CMD, &mqtt_disconnect, sizeof(adp_mqtt_cmd_t), ADP_TOPIC_PRIORITY_NORMAL);
 }
 
+void do_backoff_tcp_connect(adp_os_timer_t timer_obj)
+{
+    adp_mqtt_client_t *user_ctx = (adp_mqtt_client_t*)adp_os_timer_get_user_ctx(timer_obj);
+    ADP_ASSERT(user_ctx, "Null instead of valid userCtx");
+    adp_log_d("MQTT client [%s] scheduled reconnect started for userCtx 0x%x", user_ctx->name, user_ctx);
+    do_tcp_connect(user_ctx);
+}
+
+void do_backoff_raise_timer(adp_mqtt_client_t *user_ctx)
+{
+    // Start one-shot timer
+    uint32_t p = (1000 + adp_os_rand()%10000);
+    if (!adp_os_timer_start((1000 + adp_os_rand()%10000), 0 /* auto reload */, do_backoff_tcp_connect, user_ctx)) {
+        adp_log_e("Unable to raise backoff timer, so start the action right away for userCtx 0x%x", user_ctx);
+        do_backoff_tcp_connect(user_ctx);
+    } else {
+        adp_log_d("MQTT client [%s] reconect will be in %d.%03ds for userCtx 0x%x", user_ctx->name, p/1000, p%1000, user_ctx);
+    }
+}
+
 // Handling: Socket connection success or not
 int net_agent_status_handler(uint32_t topic_id, void* data, uint32_t len)
 {
@@ -116,15 +136,14 @@ int net_agent_status_handler(uint32_t topic_id, void* data, uint32_t len)
             } else {
                 adp_log_d("MQTT client [%s] TCP connect failed", client->name);
                 // Nothing to disconnect we need to start tcp_connect again after a backoff
-                do_tcp_connect(cmd_status->user_ctx);
+                do_backoff_raise_timer(cmd_status->user_ctx);
             }
         }
         break;
     case ADP_IPNET_DO_TCP_SHUTDOWN:
         {
-            adp_log_d("MQTT client [%s] TCP shutdown completed", client->name);
-            // TODO add an mqtt backoff period
-            do_tcp_connect(cmd_status->user_ctx);
+            adp_log_d("MQTT client [%s] TCP shutdown completed, take a backoff and try again", client->name);
+            do_backoff_raise_timer(cmd_status->user_ctx);
         }
         break;
     default:
@@ -149,6 +168,7 @@ int mqtt_agent_status_handler(uint32_t topic_id, void* data, uint32_t len)
                 // Subscribe for topics
                 do_mqtt_subscribe(cmd_status->user_ctx);
             } else {
+                adp_log_d("MQTT client [%s] TCP connect failed -> shutdown the socket", client->name);
                 do_tcp_shutdown(cmd_status->user_ctx);
             }
         }

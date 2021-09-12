@@ -50,7 +50,9 @@ void adp_os_sleep(uint32_t time_ms);
 
 
 // Timer management
-adp_os_timer_t adp_os_timer_start(uint32_t timeout_ms, int auto_reload, adp_os_timer_cb_t callback);
+adp_os_timer_t adp_os_timer_start(uint32_t timeout_ms, int auto_reload, adp_os_timer_cb_t callback, void *user_ctx);
+
+void* adp_os_timer_get_user_ctx(const adp_os_timer_t timer_obj);
 
 adp_result_t adp_os_timer_stop(adp_os_timer_t timer_obj);
 

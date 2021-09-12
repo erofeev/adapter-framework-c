@@ -38,7 +38,7 @@ enum app_topics_enum {
     ADP_TOPIC_CLI_INPUT_STREAM                      = 0x00000001,
     ADP_TOPIC_CLI_EXECUTE_CMD                       = 0x00000002,
     // Networking TCP-UDP/IP
-    ADP_TOPIC_IPNET_IPSTATUS                        = 0x00000010,
+    ADP_TOPIC_IPNET_STATUS                          = 0x00000010,
     ADP_TOPIC_IPNET_EXECUTE_CMD                     = 0x00000011,
     ADP_TOPIC_IPNET_CMD_STATUS                      = 0x00000012,
     ADP_TOPIC_IPNET_SOCKET_RXTX_ACTIVITY            = 0x00000013,

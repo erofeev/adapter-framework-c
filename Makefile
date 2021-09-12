@@ -84,7 +84,7 @@ announce:
 	@echo ""
 	@echo "Building..."
 
-build: announce | $(OBJS) $(APP)
+build: announce | $(OBJS) $(APP) $(SRCS) Makefile
 	@echo "ADP Info:"
 	@size $(OBJS) | grep 'applications\|hex	filename'
 	@echo "ADP Info:"
@@ -93,6 +93,8 @@ build: announce | $(OBJS) $(APP)
 	@size $(OBJS) | grep -v 'applications\|adp\|hex	filename'
 	@echo "Total Info:"
 	@size $(APP)
+#	@echo FIXME at:
+#	@grep  -inr FIXME ./$(SRCS)
 	@echo "Done."
 	@echo 
 	@echo 

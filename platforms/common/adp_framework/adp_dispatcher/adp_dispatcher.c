@@ -184,6 +184,7 @@ adp_result_t adp_topic_publish(uint32_t topic_id, const void * data, uint32_t da
                         dispatcher_table[i].topic_name, data_length);
                 return ADP_RESULT_NO_SPACE_LEFT;
             }
+            adp_os_sleep(0);
             return ADP_RESULT_SUCCESS;
         }
     }
