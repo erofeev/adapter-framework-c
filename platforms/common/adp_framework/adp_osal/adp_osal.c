@@ -116,7 +116,7 @@ void *adp_os_malloc_trace(uint32_t size, const char* caller_name, uint32_t line_
         }
     }
     adp_os_mutex_give(os_mem_mutex);
-    adp_log_e("Mem trace DB is full");
+    adp_log_e("Mem trace DB is full, from %s:%d", caller_name, line_number);
     return ptr;
 }
 
@@ -136,6 +136,7 @@ void  adp_os_free_trace(void* ptr)
             return;
         }
     }
+    vPortFree(ptr);
     adp_os_mutex_give(os_mem_mutex);
     adp_log_e("Mem trace - free() on unallocated pointer");
 }
