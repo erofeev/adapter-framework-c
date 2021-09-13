@@ -94,11 +94,13 @@ uint32_t adp_os_rand()
 
 
 #ifdef ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED
-
+#define adp_os_mutex_create(x) NULL
+#define adp_os_mutex_take(x)
+#define adp_os_mutex_give(x)
 void *adp_os_malloc_trace(uint32_t size, const char* caller_name, uint32_t line_number)
 {
     uint32_t t = adp_os_uptime_ms();
-    void *ptr = pvPortMalloc(size);
+    void *ptr = _pvPortMalloc(size);
     if (!os_mem_mutex) {
         os_mem_mutex = adp_os_mutex_create();
     }
@@ -128,7 +130,7 @@ void  adp_os_free_trace(void* ptr)
     for (int i = 0; i < ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE; i++) {
         if (mem_db[i].mem_ptr == ptr) {
             mem_db[i].mem_ptr = NULL;
-            vPortFree(ptr);
+            _vPortFree(ptr);
             if (peak > total_peak)
                 total_peak = peak;
             peak -= mem_db[i].size;
@@ -157,11 +159,14 @@ void  adp_os_mem_trace_print()
     adp_log("ADP modules, heap alloc'd total: %d Max used peak: %d", sum, total_peak);
     adp_os_mutex_give(os_mem_mutex);
 }
+#undef adp_os_mutex_create
+#undef adp_os_mutex_take
+#undef adp_os_mutex_give
 #else
 
 void *adp_os_malloc(uint32_t size)
 {
-    void *ptr = pvPortMalloc(size);
+    void *ptr = _pvPortMalloc(size);
     adp_log_d("Mem alloc 0x%x", ptr, size);
     return ptr;
 }
@@ -170,7 +175,7 @@ void adp_os_free(void* ptr)
 {
     adp_log_d("Mem free 0x%x", ptr);
     if (ptr)
-        vPortFree(ptr);
+        _vPortFree(ptr);
 }
 #endif
 

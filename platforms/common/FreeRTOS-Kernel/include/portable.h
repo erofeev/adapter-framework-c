@@ -172,8 +172,16 @@ void vPortGetHeapStats( HeapStats_t * pxHeapStats );
 /*
  * Map to the memory management routines required for the port.
  */
-void * pvPortMalloc( size_t xSize ) PRIVILEGED_FUNCTION;
-void vPortFree( void * pv ) PRIVILEGED_FUNCTION;
+#ifndef ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED_ADP_ONLY
+    #include <adp_osal.h>
+    #define pvPortMalloc adp_os_malloc
+    #define vPortFree    adp_os_free
+#else
+    #define pvPortMalloc _pvPortMalloc
+    #define vPortFree    _vPortFree
+#endif
+void * _pvPortMalloc( size_t xSize ) PRIVILEGED_FUNCTION;
+void _vPortFree( void * pv ) PRIVILEGED_FUNCTION;
 void vPortInitialiseBlocks( void ) PRIVILEGED_FUNCTION;
 size_t xPortGetFreeHeapSize( void ) PRIVILEGED_FUNCTION;
 size_t xPortGetMinimumEverFreeHeapSize( void ) PRIVILEGED_FUNCTION;
