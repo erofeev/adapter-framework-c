@@ -74,7 +74,8 @@ HANDLING_CMD(START_MQTT)
         }
         cnt += i;
     } else {
-        adp_log_e("You need to specify client name");
+        adp_log_e("With no arguments this command will terminate all MQTT cients");
+        adp_mqtt_agent_stop(NULL);
     }
 }
 

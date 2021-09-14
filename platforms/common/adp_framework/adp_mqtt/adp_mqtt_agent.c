@@ -94,8 +94,13 @@ void do_backoff_tcp_connect(adp_os_timer_t timer_obj)
     adp_mqtt_client_t *user_ctx = (adp_mqtt_client_t*)adp_os_timer_get_user_ctx(timer_obj);
     adp_os_timer_delete(timer_obj);
     ADP_ASSERT(user_ctx, "Null instead of valid userCtx");
-    adp_log_d("MQTT client [%s] scheduled reconnect started for userCtx 0x%x", user_ctx->name, user_ctx);
-    do_tcp_connect(user_ctx);
+    for (int i = 0; i < ADP_MQTT_SESSIONS_MAX_NUMBER; i++) {
+        if (s_mqtt_client_db[i] == user_ctx) {
+            adp_log_d("MQTT client [%s] scheduled reconnect started for userCtx 0x%x", user_ctx->name, user_ctx);
+            do_tcp_connect(user_ctx);
+            return;
+        }
+    }
 }
 
 void do_backoff_raise_timer(adp_mqtt_client_t *user_ctx)
@@ -217,5 +222,22 @@ void adp_mqtt_agent_start(adp_mqtt_client_t *client)
     }
     s_mqtt_client_db[cnt++] = client;
     do_tcp_connect(client);
+}
+
+
+void adp_mqtt_agent_stop(adp_mqtt_client_t *client)
+{
+    if (!client) {
+        for (int i = 0; i < ADP_MQTT_SESSIONS_MAX_NUMBER; i++) {
+            if (s_mqtt_client_db[i]) {
+                adp_mqtt_client_t *client_i = s_mqtt_client_db[i];
+                s_mqtt_client_db[i] = NULL;
+                do_mqtt_disconnect(client_i);
+                do_tcp_shutdown(client_i);
+            }
+        }
+    } else {
+        adp_log_e("MQTT stopping of particular client - is not support yet");
+    }
 }
 

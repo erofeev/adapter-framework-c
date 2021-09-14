@@ -31,5 +31,6 @@ typedef struct {
 
 void adp_mqtt_agent_start(adp_mqtt_client_t *client);
 
+void adp_mqtt_agent_stop(adp_mqtt_client_t *client);
 
 #endif /* ADAPTERS_ADP_MQTT_AGENT__H_ */
