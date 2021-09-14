@@ -393,7 +393,9 @@ int mqtt_socket_monitor_io(uint32_t topic_id, void* data, uint32_t len)
 
     if ( (!session) || (!user_ctx) ){
         adp_log_dd("Socket does not belong to MQTT session, topic 0x%x on socket 0x%x", topic_id, *socket);
-        return ADP_RESULT_FAILED;
+        // It could be that CONNECT in progress and we received something but there is no session in the list
+        // Consider that case as a SUCCESS and within our interests
+        return ADP_RESULT_SUCCESS;
     }
 
     // Notify users on disconnection if SOCKET closed
@@ -520,6 +522,9 @@ void mqtt_timer_cb(adp_os_timer_t timer_obj)
 
 adp_result_t adp_mqtt_initialize(adp_dispatcher_handle_t dispatcher)
 {
+    if (s_session_list_mutex) {
+        return ADP_RESULT_FAILED;
+    }
     memset(s_session_db, 0x00, sizeof(s_session_db));
     s_session_list_mutex = adp_os_mutex_create();
 

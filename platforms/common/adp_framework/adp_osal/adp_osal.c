@@ -41,7 +41,6 @@ typedef struct {
 adp_mem_usage_db_t  mem_db[ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE] = {0};
 uint32_t            peak         = 0;
 uint32_t            total_peak   = 0;
-adp_os_mutex_t      os_mem_mutex = NULL;
 
 #endif
 
@@ -94,17 +93,12 @@ uint32_t adp_os_rand()
 
 
 #ifdef ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED
-#define adp_os_mutex_create(x) NULL
-#define adp_os_mutex_take(x)
-#define adp_os_mutex_give(x)
+
 void *adp_os_malloc_trace(uint32_t size, const char* caller_name, uint32_t line_number)
 {
     uint32_t t = adp_os_uptime_ms();
     void *ptr = _pvPortMalloc(size);
-    if (!os_mem_mutex) {
-        os_mem_mutex = adp_os_mutex_create();
-    }
-    adp_os_mutex_take(os_mem_mutex);
+    vTaskSuspendAll();
     peak += size;
     for (int i = 0; i < ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE; i++) {
         if (!mem_db[i].mem_ptr) {
@@ -113,11 +107,11 @@ void *adp_os_malloc_trace(uint32_t size, const char* caller_name, uint32_t line_
             mem_db[i].size        = size;
             mem_db[i].caller_name = caller_name;
             mem_db[i].line        = line_number;
-            adp_os_mutex_give(os_mem_mutex);
+            xTaskResumeAll();
             return ptr;
         }
     }
-    adp_os_mutex_give(os_mem_mutex);
+    xTaskResumeAll();
     adp_log_e("Mem trace DB is full, from %s:%d", caller_name, line_number);
     return ptr;
 }
@@ -126,7 +120,7 @@ void  adp_os_free_trace(void* ptr)
 {
     if (!ptr)
         return;
-    adp_os_mutex_take(os_mem_mutex);
+    vTaskSuspendAll();
     for (int i = 0; i < ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE; i++) {
         if (mem_db[i].mem_ptr == ptr) {
             mem_db[i].mem_ptr = NULL;
@@ -134,12 +128,12 @@ void  adp_os_free_trace(void* ptr)
             if (peak > total_peak)
                 total_peak = peak;
             peak -= mem_db[i].size;
-            adp_os_mutex_give(os_mem_mutex);
+            xTaskResumeAll();
             return;
         }
     }
     vPortFree(ptr);
-    adp_os_mutex_give(os_mem_mutex);
+    xTaskResumeAll();
     adp_log_e("Mem trace - free() on unallocated pointer");
 }
 
@@ -148,7 +142,7 @@ void  adp_os_mem_trace_print()
     int      k   = 0;
     uint32_t sum = 0;
     adp_log("%3s %20s %40s:%4s  %20s  %s", "#", "Timestamp", "Function", "Line", "Size", "Pointer");
-    adp_os_mutex_take(os_mem_mutex);
+    vTaskSuspendAll();
     for (int i = 0; i < ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE; i++) {
         if (mem_db[i].mem_ptr) {
             k++;
@@ -157,11 +151,9 @@ void  adp_os_mem_trace_print()
         }
     }
     adp_log("ADP modules, heap alloc'd total: %d Max used peak: %d", sum, total_peak);
-    adp_os_mutex_give(os_mem_mutex);
+    xTaskResumeAll();
 }
-#undef adp_os_mutex_create
-#undef adp_os_mutex_take
-#undef adp_os_mutex_give
+
 #else
 
 void *adp_os_malloc(uint32_t size)
@@ -223,6 +215,11 @@ adp_result_t adp_os_timer_stop(adp_os_timer_t timer_obj)
         return ADP_RESULT_TIMEOUT;
     }
     return ADP_RESULT_SUCCESS;
+}
+
+void adp_os_timer_delete(adp_os_timer_t timer_obj)
+{
+    xTimerDelete(timer_obj, 100);
 }
 
 int adp_os_get_max_prio(void)

@@ -230,7 +230,11 @@ void adp_ipnet_socket_free(adp_socket_t socket)
         // Disable monitoring
         FreeRTOS_setsockopt(socket, 0, FREERTOS_SO_WAKEUP_CALLBACK, NULL, 0);
         FreeRTOS_shutdown(socket, 0 /* not used */);
-        FreeRTOS_closesocket(socket);
+        int i = FreeRTOS_closesocket(socket);
+        if (1 != i) {
+            adp_log_e("Unable to close socket 0x%x, error %d", socket, i);
+        }
+
     } else {
         adp_log_e("Bug: socket is null");
     }

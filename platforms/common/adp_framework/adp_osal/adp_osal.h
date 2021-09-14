@@ -56,6 +56,7 @@ void* adp_os_timer_get_user_ctx(const adp_os_timer_t timer_obj);
 
 adp_result_t adp_os_timer_stop(adp_os_timer_t timer_obj);
 
+void adp_os_timer_delete(adp_os_timer_t timer_obj);
 
 // Memory management
 uint32_t adp_os_get_total_heap_size(void);
