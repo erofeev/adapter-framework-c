@@ -29,7 +29,7 @@ adp_result_t adp_topic_register(adp_dispatcher_handle_t dispatcher_hnd, uint32_t
 
 adp_result_t adp_topic_publish(uint32_t topic_id, const void* const data, uint32_t data_length, adp_topic_prio_t prio);
 
-adp_result_t adp_topic_subscribe (uint32_t topic_mask, adp_topic_cb subscriber_cb, const char * subscriber_name);
+adp_result_t adp_topic_subscribe (uint32_t topic_id, adp_topic_cb subscriber_cb, const char * subscriber_name);
 
 void adp_dispatcher_db_print(adp_dispatcher_handle_t dispatcher_handle);
 

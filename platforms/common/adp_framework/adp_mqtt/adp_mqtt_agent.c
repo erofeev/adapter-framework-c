@@ -232,6 +232,7 @@ void adp_mqtt_agent_stop(adp_mqtt_client_t *client)
             if (s_mqtt_client_db[i]) {
                 adp_mqtt_client_t *client_i = s_mqtt_client_db[i];
                 s_mqtt_client_db[i] = NULL;
+                // TODO do graceful shutdown here
                 do_mqtt_disconnect(client_i);
                 do_tcp_shutdown(client_i);
             }
