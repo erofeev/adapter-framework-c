@@ -13,6 +13,7 @@
 #include "adp_tcpip.h"
 #include "adp_mqtt.h"
 #include "adp_logging.h"
+#include "adp_mem_table.h"
 
 #include "app_console.h"
 #include "app_mqtt.h"
@@ -21,7 +22,7 @@
 void print_info(void* params)
 {
     UNUSED_VAR(params);
-    int interval = 60*1; // 1 minute
+    int interval = 1; // 1 minute
     char  *data;
 
     while(1) {
@@ -30,11 +31,53 @@ void print_info(void* params)
 
         // Print the whole DB
         data = "db\n";
-        adp_topic_publish(ADP_TOPIC_CLI_INPUT_STREAM, data, strlen(data) + 1, ADP_TOPIC_PRIORITY_HIGH);
+ //       adp_topic_publish(ADP_TOPIC_CLI_INPUT_STREAM, data, strlen(data) + 1, ADP_TOPIC_PRIORITY_HIGH);
 
         // Print the memory trace DB
         data = "mem\n";
-        adp_topic_publish(ADP_TOPIC_CLI_INPUT_STREAM, data, strlen(data) + 1, ADP_TOPIC_PRIORITY_HIGH);
+  //      adp_topic_publish(ADP_TOPIC_CLI_INPUT_STREAM, data, strlen(data) + 1, ADP_TOPIC_PRIORITY_HIGH);
+
+        // ctx.name
+        // ctx.notify_on_size
+        // ctx.items_cnt ???
+        //
+        // adp_mem_push(ctx, data, len, ZeroCopy)
+        // adp_mem_pop(ctx, data, &len)
+        //
+        //
+        //  adp_memdb_put (ctx, ""
+        // ctx.format         = "%s%d";
+        // ctx.row_count      =
+        // ctx.total_max_size =
+        // while (ctx.id != NULL) {
+        //    ctx.id = adp_row_get(ctx, "%S%S%d", "Network", "Configured", &configured);
+        // }
+        // adp_row_get(
+        // row_ptr = adp_mem_table_row_add(ctx,
+        // adp_mem_list_push(ctx, row_ptr, sizeof(row_ptr));
+        //
+
+
+        static adp_mem_table_t *table = NULL;
+        if (!table) {
+            table = adp_os_malloc(sizeof(adp_mem_table_t));
+            table->format   = "[%d] [%s.%s] = [%d]";
+            table->name     = "Table#1";
+            table->row_size = 0;
+        }
+
+        adp_mem_table_row_t t = adp_mem_table_row_add(table, adp_os_uptime_ms(), "Network", "SSID", 1);
+        adp_log("ROW SIZE is %d", table->row_size);
+        ADP_SIGNED_INT32 timestamp, i32;
+        ADP_STRING       str1;
+        ADP_STRING       str2;
+
+        adp_mem_table_row_get(table, t, &timestamp, &str1, &str2, &i32);
+        adp_log("Getting row");
+        adp_log(table->format, timestamp, str1, str2, i32);
+
+
+
     }
 }
 

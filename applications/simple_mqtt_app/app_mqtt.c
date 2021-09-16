@@ -24,7 +24,7 @@ adp_mqtt_client_t client_template = {
         .client_id           = "",
         .username            = "TEST",
         .password            = "TEST",
-        .ack_timeout_ms      = 1000,
+        .ack_timeout_ms      = 2000,
         .number_of_topics    = 2,
         .topics = {
                 {

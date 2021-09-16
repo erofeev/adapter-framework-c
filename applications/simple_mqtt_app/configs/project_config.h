@@ -27,6 +27,14 @@
 #define ADP_CONSOLE_MAX_CMD_SIZE                     40
 #define ADP_CONSOLE_ECHO_ENABLED                      0
 
+// APP MEM TABLE configuration
+#undef ADP_MEM_TABLE_MODULE_NO_DEBUG
+#define CELL_TYPE_DESCRIPTION_TABLE  \
+ /* 4 bytes signed int             */       { 'd' , sizeof(int32_t)  },  \
+ /* 4 bytes unsigned int           */       { 'u' , sizeof(uint32_t) },  \
+ /* Pointer to string              */       { 's' , sizeof(char*)    },  \
+ /* Float (typically IEEE 4 bytes  */       { 'f' , sizeof(float)    },
+
 // APP Network settings
 #undef ADP_TCPIP_MODULE_NO_DEBUG
 #define ADP_IPNET_HOSTNAME                           "AdpHostName"

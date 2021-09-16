@@ -12,6 +12,7 @@
 
 typedef struct {
     char                                 *name;
+    uint16_t                          activate;
     uint16_t                              port;
     char                             *hostname;
     uint8_t                          ip_octet1;

@@ -13,6 +13,7 @@ COMMON_COMPONENTS   += adp_framework/adp_logging
 COMMON_COMPONENTS   += adp_framework/adp_osal
 COMMON_COMPONENTS   += adp_framework/adp_tcpip
 COMMON_COMPONENTS   += adp_framework/adp_mqtt
+COMMON_COMPONENTS   += adp_framework/adp_mem_tools
 COMMON_COMPONENTS   += adp_framework/adp_uart
 COMMON_COMPONENTS   += FreeRTOS-Kernel
 COMMON_COMPONENTS   += FreeRTOS-Plus-TCP
