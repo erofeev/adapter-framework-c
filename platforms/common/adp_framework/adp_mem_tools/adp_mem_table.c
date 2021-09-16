@@ -35,35 +35,61 @@ adp_mem_table_cell_descr_t cell[] = {
 };
 
 
+adp_mem_table_t* adp_mem_table_create(const char* name, const char *format)
+{
+    adp_mem_table_t *table;
+    if ( (!name) || (!format) ) {
+        adp_log_e("Invalid argument");
+        return NULL;
+    }
+
+    uint32_t name_size   = strlen(name) + 1;
+    uint32_t format_size = strlen(format) + 1;
+    table = adp_os_malloc(sizeof(adp_mem_table_t) + name_size + format_size);
+    if (!table) {
+        adp_log_e("No memory left");
+        return NULL;
+    }
+    table->row_size = 0;
+    table->rows_cnt = 0;
+    table->name     = (char*)(table + sizeof(adp_mem_table_t));
+    table->format   = (char*)(table + sizeof(adp_mem_table_t) + name_size);
+    memcpy(table->name  , name  , name_size);
+    memcpy(table->format, format, format_size);
+
+    const char *ch = &format[0];
+    while (*ch) {
+        if (*ch++ != '%') {
+            continue;
+        }
+        for (uint32_t i = 0; i < sizeof(cell)/sizeof(adp_mem_table_cell_descr_t); i++) {
+            if (cell[i].type == *ch) {
+                adp_log_dd("Size of %c = %d bytes", *ch, cell[i].length);
+                table->row_size = table->row_size + cell[i].length;
+            }
+        }
+    }
+    adp_log_d("Table [%s] format:'%s' row size is %d", table->name, table->format, table->row_size);
+
+    return table;
+}
+
 adp_mem_table_row_t adp_mem_table_row_add(adp_mem_table_t *table, ...)
 {
     if (!table) {
         adp_log_e("Table is NULL");
-        return (void*)0;
-    }
-    if (!table->format) {
-        adp_log_e("Table format is NULL");
         return (adp_mem_table_row_t)0;
     }
 
-    char *ch = (char*)&table->format[0];
+    const char *ch = (char*)&table->format[0];
     if (!table->row_size) {
-        while (*ch) {
-            if (*ch++ != '%') {
-                continue;
-            }
-            for (uint32_t i = 0; i < sizeof(cell)/sizeof(adp_mem_table_cell_descr_t); i++) {
-                if (cell[i].type == *ch) {
-                    adp_log_dd("Size of %c = %d bytes", *ch, cell[i].length);
-                    table->row_size = table->row_size + cell[i].length;
-                }
-            }
-        }
-        adp_log_dd("Table [%s] row size is %d", table->name, table->row_size);
+        adp_log_e("Invalid row size");
+        return (adp_mem_table_row_t)0;
     }
     ch = (char*)&table->format[0];
     uint8_t *row = adp_os_malloc(table->row_size);
     if (!row) {
+        adp_log_e("No memory left");
         return (adp_mem_table_row_t)0;
     }
 
@@ -130,14 +156,14 @@ adp_mem_table_row_t adp_mem_table_row_add(adp_mem_table_t *table, ...)
         }
     }
     va_end(args);
-
+    table->rows_cnt++;
     return row;
 }
 
 
 void adp_mem_table_row_get(adp_mem_table_t *table, const adp_mem_table_row_t row, ...)
 {
-    char* ch = (char*)&table->format[0];
+    const char* ch = (char*)&table->format[0];
     char *row_pos = (char*)row;
     va_list args;
     va_start(args, row);
@@ -159,7 +185,7 @@ void adp_mem_table_row_get(adp_mem_table_t *table, const adp_mem_table_row_t row
 
 void adp_mem_table_row_del(adp_mem_table_t *table, adp_mem_table_row_t row)
 {
-    char         *ch = (char*)&table->format[0];
+    const char   *ch = (char*)&table->format[0];
     uint8_t *row_pos = row;
 
     while (*ch) {

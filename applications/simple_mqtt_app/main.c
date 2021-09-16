@@ -22,7 +22,7 @@
 void print_info(void* params)
 {
     UNUSED_VAR(params);
-    int interval = 1; // 1 minute
+    int interval = 2; // 1 minute
     char  *data;
 
     while(1) {
@@ -59,21 +59,18 @@ void print_info(void* params)
 
 
         static adp_mem_table_t *table = NULL;
-        if (!table) {
-            table = adp_os_malloc(sizeof(adp_mem_table_t));
-            table->format   = "[%d] [%s.%s] = [%d]";
-            table->name     = "Table#1";
-            table->row_size = 0;
-        }
+        if (!table)
+            table = adp_mem_table_create("Table#1", "[%d] [%s.%s] = [%d]");
+        ADP_ASSERT(table, "No memory left");
 
         adp_mem_table_row_t t = adp_mem_table_row_add(table, adp_os_uptime_ms(), "Network", "SSID", 1);
 
+        adp_log("Getting row");
         ADP_SIGNED_INT32 timestamp, i32;
         ADP_STRING       str1;
         ADP_STRING       str2;
         adp_mem_table_row_get(table, t, &timestamp, &str1, &str2, &i32);
 
-        adp_log("Getting row");
         adp_log(table->format, timestamp, str1, str2, i32);
         adp_mem_table_row_del(table, t);
 
