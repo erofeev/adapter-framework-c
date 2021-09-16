@@ -59,6 +59,7 @@ adp_mem_table_row_t adp_mem_table_row_add(adp_mem_table_t *table, ...)
                 }
             }
         }
+        adp_log_dd("Table [%s] row size is %d", table->name, table->row_size);
     }
     ch = (char*)&table->format[0];
     uint8_t *row = adp_os_malloc(table->row_size);
@@ -100,7 +101,7 @@ adp_mem_table_row_t adp_mem_table_row_add(adp_mem_table_t *table, ...)
             {
                 ADP_STRING t = (ADP_STRING)va_arg(args, ADP_STRING);
                 if (t) {
-                    char * str = adp_os_malloc(strlen(t) + 1);
+                    void * str = adp_os_malloc(strlen(t) + 1);
                     if (!str) {
                         adp_log_e("Mem alloc error, drop string & set NULL");
                         memset(row_ptr, 0x00, sizeof(ADP_STRING));
@@ -134,10 +135,10 @@ adp_mem_table_row_t adp_mem_table_row_add(adp_mem_table_t *table, ...)
 }
 
 
-void adp_mem_table_row_get(adp_mem_table_t *table, adp_mem_table_row_t row, ...)
+void adp_mem_table_row_get(adp_mem_table_t *table, const adp_mem_table_row_t row, ...)
 {
     char* ch = (char*)&table->format[0];
-    char *raw_pos = (char*)row;
+    char *row_pos = (char*)row;
     va_list args;
     va_start(args, row);
     while (*ch) {
@@ -147,12 +148,38 @@ void adp_mem_table_row_get(adp_mem_table_t *table, adp_mem_table_row_t row, ...)
         for (uint32_t i = 0; i < sizeof(cell)/sizeof(adp_mem_table_cell_descr_t); i++) {
             if (cell[i].type == *ch) {
                 char* ref = va_arg(args, void*);
-                memcpy(ref, raw_pos, cell[i].length);
-                raw_pos += cell[i].length;
+                memcpy(ref, row_pos, cell[i].length);
+                row_pos += cell[i].length;
                 break;
             }
         }
     }
     va_end(args);
+}
+
+void adp_mem_table_row_del(adp_mem_table_t *table, adp_mem_table_row_t row)
+{
+    char         *ch = (char*)&table->format[0];
+    uint8_t *row_pos = row;
+
+    while (*ch) {
+        if (*ch++ != '%') {
+            continue;
+        }
+        for (uint32_t i = 0; i < sizeof(cell)/sizeof(adp_mem_table_cell_descr_t); i++) {
+            if (cell[i].type == *ch) {
+                if (*ch == 's') {
+                    char* str;
+                    memcpy(&str, row_pos, sizeof(char*));
+                    if (row_pos != NULL) {
+                        adp_os_free(str);
+                    }
+                }
+                row_pos += cell[i].length;
+                break;
+            }
+        }
+    }
+    adp_os_free(row);
 }
 

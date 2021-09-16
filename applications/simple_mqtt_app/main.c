@@ -67,15 +67,15 @@ void print_info(void* params)
         }
 
         adp_mem_table_row_t t = adp_mem_table_row_add(table, adp_os_uptime_ms(), "Network", "SSID", 1);
-        adp_log("ROW SIZE is %d", table->row_size);
+
         ADP_SIGNED_INT32 timestamp, i32;
         ADP_STRING       str1;
         ADP_STRING       str2;
-
         adp_mem_table_row_get(table, t, &timestamp, &str1, &str2, &i32);
+
         adp_log("Getting row");
         adp_log(table->format, timestamp, str1, str2, i32);
-
+        adp_mem_table_row_del(table, t);
 
 
     }

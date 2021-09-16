@@ -27,7 +27,7 @@ typedef struct {
 
 
 adp_mem_table_row_t adp_mem_table_row_add(adp_mem_table_t *table, ...);
-void                adp_mem_table_row_get(adp_mem_table_t *table, adp_mem_table_row_t row, ...);
-
+void                adp_mem_table_row_get(adp_mem_table_t *table, const adp_mem_table_row_t row, ...);
+void                adp_mem_table_row_del(adp_mem_table_t *table, adp_mem_table_row_t row);
 
 #endif /* ADAPTERS_ADP_MEM_TABLE_H_ */
