@@ -82,6 +82,7 @@ void adp_os_mutex_take(adp_os_mutex_t mutex);
 
 void adp_os_mutex_give(adp_os_mutex_t mutex);
 
+void adp_os_mutex_del(adp_os_mutex_t mutex);
 
 // Queue management
 adp_os_queue_handle_t adp_os_queue_create(uint32_t queue_length, uint32_t item_size);

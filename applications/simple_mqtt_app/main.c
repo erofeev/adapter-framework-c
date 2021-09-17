@@ -63,17 +63,32 @@ void print_info(void* params)
             table = adp_mem_table_create("Table#1", "[%d] [%s.%s] = [%d]");
         ADP_ASSERT(table, "No memory left");
 
-        adp_mem_table_row_t t = adp_mem_table_row_add(table, adp_os_uptime_ms(), "Network", "SSID", 1);
+        adp_mem_table_row_push(table, adp_os_uptime_ms(), "Network", "Configured", 1);
+        adp_mem_table_row_push(table, adp_os_uptime_ms(), "Network", "Peter", 1);
+        adp_mem_table_row_push(table, adp_os_uptime_ms(), "Network", "Chimak", 1);
+        adp_mem_table_row_push(table, adp_os_uptime_ms(), "Network", "Robohand", 1);
 
         adp_log("Getting row");
         ADP_SIGNED_INT32 timestamp, i32;
         ADP_STRING       str1;
         ADP_STRING       str2;
-        adp_mem_table_row_get(table, t, &timestamp, &str1, &str2, &i32);
-
+ /*       adp_mem_table_row_pop(table, &timestamp, &str1, &str2, &i32);
         adp_log(table->format, timestamp, str1, str2, i32);
-        adp_mem_table_row_del(table, t);
 
+        adp_mem_table_row_pop(table, &timestamp, &str1, &str2, &i32);
+        adp_log(table->format, timestamp, str1, str2, i32);
+
+        adp_mem_table_row_pop(table, &timestamp, &str1, &str2, &i32);
+        adp_log(table->format, timestamp, str1, str2, i32);
+
+        adp_mem_table_row_pop(table, &timestamp, &str1, &str2, &i32);
+        adp_log(table->format, timestamp, str1, str2, i32);
+
+        adp_mem_table_row_pop(table, &timestamp, &str1, &str2, &i32);
+
+        adp_mem_table_destroy(table);
+        table = NULL;
+*/
 
     }
 }

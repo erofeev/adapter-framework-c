@@ -29,7 +29,7 @@ adp_mqtt_client_t client_template = {
         .topics = {
                 {
                         .QoS = 0,
-                        .topic_filter = "tele",
+                        .topic_filter = "test",
                 },
                 {
                         .QoS = 2,

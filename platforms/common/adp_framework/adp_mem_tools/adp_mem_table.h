@@ -17,18 +17,20 @@
 
 
 typedef void* adp_mem_table_row_t;
+typedef struct adp_mem_table_ctx_s adp_mem_table_ctx_t;
 
 typedef struct {
     char                      *name;
     char                    *format;
-    uint32_t               row_size;
-    uint32_t               rows_cnt;
+    adp_mem_table_ctx_t  *table_ctx;
 } adp_mem_table_t;
 
 
 adp_mem_table_t*    adp_mem_table_create(const char* name, const char *format);
-adp_mem_table_row_t adp_mem_table_row_add(adp_mem_table_t *table, ...);
-void                adp_mem_table_row_get(adp_mem_table_t *table, const adp_mem_table_row_t row, ...);
-void                adp_mem_table_row_del(adp_mem_table_t *table, adp_mem_table_row_t row);
+void                adp_mem_table_lock(adp_mem_table_t *table);
+void                adp_mem_table_unlock(adp_mem_table_t *table);
+adp_mem_table_row_t adp_mem_table_row_push(adp_mem_table_t *table, ...);
+adp_mem_table_row_t adp_mem_table_row_pop(adp_mem_table_t *table, ...);
+void                adp_mem_table_destroy(adp_mem_table_t *table);
 
 #endif /* ADAPTERS_ADP_MEM_TABLE_H_ */
