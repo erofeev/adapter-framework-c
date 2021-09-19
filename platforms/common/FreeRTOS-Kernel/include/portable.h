@@ -172,7 +172,7 @@ void vPortGetHeapStats( HeapStats_t * pxHeapStats );
 /*
  * Map to the memory management routines required for the port.
  */
-#ifndef ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED_ADP_ONLY
+#if ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED_GLOBALLY
     #include <adp_osal.h>
     #define pvPortMalloc adp_os_malloc
     #define vPortFree    adp_os_free

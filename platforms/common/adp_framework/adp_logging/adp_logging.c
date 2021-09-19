@@ -11,7 +11,7 @@
 #include "adp_logging.h"
 
 
-#ifdef ADP_LOG_USE_COLOR
+#if ADP_LOG_USE_COLOR
     #define ADP_LOG_COLOR_GRAY              "\x1b[94m"
     #define ADP_LOG_COLOR_DARK_GRAY         "\x1b[90m"
     #define ADP_LOG_COLOR_WHITE             "\x1b[37m"

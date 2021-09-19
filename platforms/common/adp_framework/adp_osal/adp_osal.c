@@ -19,7 +19,7 @@
 #include "adp_logging.h"
 
 
-#ifdef ADP_OS_MODULE_NO_DEBUG
+#if !ADP_OS_MODULE_DEBUG
     #undef  adp_log_d
     #undef  adp_log_dd
     #define adp_log_d(...)
@@ -27,7 +27,7 @@
 #endif
 
 
-#ifdef ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED
+#if ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE
 
 
 typedef struct {
@@ -92,7 +92,7 @@ uint32_t adp_os_rand()
 }
 
 
-#ifdef ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED
+#if ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE
 
 void *adp_os_malloc_trace(uint32_t size, const char* caller_name, uint32_t line_number)
 {

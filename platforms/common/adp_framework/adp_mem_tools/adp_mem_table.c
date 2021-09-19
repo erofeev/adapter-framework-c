@@ -12,7 +12,7 @@
 #include "adp_mem_pool.h"
 #include "adp_mem_table.h"
 
-#ifdef ADP_MEM_TABLE_MODULE_NO_DEBUG
+#if !ADP_MEM_TABLE_MODULE_DEBUG
     #undef  adp_log_d
     #undef  adp_log_dd
     #define adp_log_d(...)

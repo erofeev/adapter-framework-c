@@ -15,7 +15,7 @@
 #define ADP_ASCII_BACKSPACE               0x08
 #define ADP_ASCII_SPACE                   0x20
 
-#ifdef ADP_CONSOLE_MODULE_NO_DEBUG
+#if !ADP_CONSOLE_MODULE_DEBUG
     #undef  adp_log_d
     #undef  adp_log_dd
     #define adp_log_d(...)
