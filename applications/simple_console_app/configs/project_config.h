@@ -9,9 +9,9 @@
 
 // APP OS settings
 #define ADP_OS_MODULE_DEBUG                           0
-#define ADP_HEAP_MEMORY_SIZE                  (128*1024)
+#define ADP_HEAP_MEMORY_SIZE                  (1465*1024)
 #define ADP_OS_DEFAULT_QUEUE_PUT_TIMEOUT_MS         100
-#define ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED_GLOBALLY  1
+#define ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED_GLOBALLY  0
 #define ADP_MEMORY_ALLOC_FREE_TRACE_DB_SIZE       10000
 
 // APP Dispatcher settings
@@ -27,7 +27,7 @@
 #define ADP_CONSOLE_ECHO_ENABLED                      0
 
 // APP MEM TABLE configuration
-#define ADP_MEM_TABLE_MODULE_DEBUG                    1
+#define ADP_MEM_TABLE_MODULE_DEBUG                    0
 
 
 // APP Network settings

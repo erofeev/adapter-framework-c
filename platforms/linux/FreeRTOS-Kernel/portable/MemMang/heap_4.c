@@ -74,10 +74,10 @@ typedef struct A_BLOCK_LINK
     size_t xBlockSize;                     /*<< The size of the free block. */
 } BlockLink_t;
 //ADP_MEMORY_ALLOC_FREE_TRACE_ENABLED
-#undef vPortFree
-#undef pvPortMalloc
-#define vPortFree _vPortFree
-#define pvPortMalloc _pvPortMalloc
+//#undef vPortFree
+//#undef pvPortMalloc
+//#define vPortFree _vPortFree
+//#define pvPortMalloc _pvPortMalloc
 /*-----------------------------------------------------------*/
 
 /*

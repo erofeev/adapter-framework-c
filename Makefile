@@ -3,9 +3,9 @@
 #  Makefile
 #
 ##
-include applications/simple_mqtt_app/build.mk
+#include applications/simple_mqtt_app/build.mk
 #include applications/simple_tcpip_app/build.mk
-#include applications/simple_console_app/build.mk
+include applications/simple_console_app/build.mk
 
 
 PRINT_COMPONENTS := $(addprefix \\n  -- [common] ,$(COMMON_COMPONENTS))
@@ -37,8 +37,8 @@ DEPS := $(shell find ./$(SRC_DIR_NAME) -type d )
 CFLAGS  := -Wall -Wshadow -Wundef -Winit-self -Wpointer-arith
 CFLAGS  += -Wextra -Wno-unused-parameter -Wundef -Warray-bounds -Wno-missing-braces -Wmissing-field-initializers
 # for GCC (not CLANG) we can also use -Wunused-but-set-variable   -Wunused-but-set-parameter
-CFLAGS  += -fdata-sections -ffunction-sections -O2
-LDFLAGS := -pthread -lpcap -Wl,-Map=$(BUILD_DIR_NAME)/$(APP_NAME).map,--cref -Wl,--gc-sections
+#CFLAGS  += -fdata-sections -ffunction-sections -O2
+LDFLAGS := -pthread -lpcap -Wl,-Map=$(BUILD_DIR_NAME)/$(APP_NAME).map,--cref -Wl,--gc-sections $(LDLIBS)
 
 
 # function to get obj file name from src file name
@@ -84,7 +84,7 @@ announce:
 	@echo ""
 	@echo "Building..."
 
-build: announce | $(OBJS) $(APP) $(SRCS) Makefile
+build: announce | $(OBJS) $(APP) $(SRCS) Makefile 
 	@echo "ADP Info:"
 	@size $(OBJS) | grep 'applications\|hex	filename'
 	@echo "ADP Info:"

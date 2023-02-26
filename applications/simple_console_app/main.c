@@ -14,6 +14,7 @@
 #include "adp_logging.h"
 
 #include "app_console.h"
+#include "libopenal_api.h"
 
 #include "FreeRTOSConfig.h"
 #include "FreeRTOS.h"
@@ -36,7 +37,7 @@ void test_subpub(void* params)
 
 int main(void) {
     adp_log("Creating the World");
-
+    main1();
     // Example of user task creation
     adp_os_start_task("Info-print", &test_subpub, 512, 6, NULL);
 
@@ -58,11 +59,10 @@ int main(void) {
 
     // Run console
     adp_dispatcher_handle_t system_dispatcher = adp_dispatcher_create("System", 0, 25);
-    adp_os_start_task("Console", &adp_console_task, 128, 0, system_dispatcher);
+    adp_os_start_task("Console", &adp_console_task, 16000, 0, system_dispatcher);
 
     // Add app handler for receiving CLI commands requested for the execution
     adp_topic_subscribe(ADP_TOPIC_CLI_EXECUTE_CMD, &app_cmd_handler, "App CMD handler");
-
 
     adp_os_start();
 

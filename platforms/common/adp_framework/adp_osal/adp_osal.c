@@ -156,14 +156,14 @@ void  adp_os_mem_trace_print()
 
 #else
 
-void *adp_os_malloc(uint32_t size)
+void *adp_os_malloc2(uint32_t size)
 {
     void *ptr = _pvPortMalloc(size);
     adp_log_d("Mem alloc 0x%x", ptr, size);
     return ptr;
 }
 
-void adp_os_free(void* ptr)
+void adp_os_free2(void* ptr)
 {
     adp_log_d("Mem free 0x%x", ptr);
     if (ptr)

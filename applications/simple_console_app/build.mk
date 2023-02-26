@@ -19,3 +19,10 @@ PLATFORM_COMPONENTS := adp_framework
 PLATFORM_COMPONENTS += FreeRTOS-Kernel
 PLATFORM_COMPONENTS += log_c
 
+LDLIBS?=-lopenal
+ifeq ($(LIBAUDIO),1)
+CFLAGS+=-DLIBAUDIO
+LDLIBS+=-laudio
+else
+LDLIBS+=-lalut
+endif
